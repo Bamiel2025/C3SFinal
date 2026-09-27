@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>C3S² — Climat en classe</title>
+<meta name="description" content="Laboratoire pédagogique de climatologie : températures, précipitations, cartes et activités à partir des données ERA5 du Climate Data Store (Copernicus).">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b2545'/%3E%3Cpath d='M6 22 L12 14 L17 18 L26 7' stroke='%23e07a5f' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Aller au contenu</a>
+
+<header class="topbar" id="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#/">
+      <span class="brand-mark" aria-hidden="true">C3S²</span>
+      <span class="brand-text">
+        <strong>Climat en classe</strong>
+        <small>ERA5 · Climate Data Store</small>
+      </span>
+    </a>
+
+    <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav" aria-label="Ouvrir le menu">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="nav" id="nav" aria-label="Navigation principale">
+      <a href="#/" data-route="/">Accueil</a>
+      <a href="#/explorateur" data-route="/explorateur">Explorateur</a>
+      <a href="#/activites" data-route="/activites">Activités</a>
+      <a href="#/cartes" data-route="/cartes">Cartes</a>
+      <a href="#/aide" data-route="/aide">Aide &amp; CDS</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="main" tabindex="-1">
+  <div class="boot">
+    <div class="spinner" aria-hidden="true"></div>
+    <p>Chargement de C3S²…</p>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <p class="footer-lead" id="footer-attribution">
+      Données ERA5 © Copernicus Climate Change Service.
+    </p>
+    <p class="footer-note" id="footer-note">
+      Application pédagogique — les valeurs affichées sont des moyennes de grille
+      (0,25°) et non des mesures de station.
+    </p>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="assets/vendor/plotly.min.js"></script>
+<script src="assets/js/charts.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

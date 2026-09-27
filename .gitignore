@@ -1,0 +1,27 @@
+# Sécrets — jamais versionnés
+.env
+*.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+
+# Données volatiles
+data/cache/
+data/*.log
+data/*.err.log
+data/shots/
+data/*.png
+data/*.nc
+
+# Divers
+node_modules/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
