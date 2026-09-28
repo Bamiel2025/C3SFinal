@@ -72,6 +72,12 @@ python scripts/prepare_data.py heat      # journalier tmax/tmin (activité canic
 powershell -File scripts/prepare_all.ps1 # tout d'un coup
 ```
 
+`prepare_maps.py` écrit les cartes dans `public/assets/maps/` (CDN) **et**
+synchronise une copie dans `data/static_maps/` : le dossier `public/` n'étant
+pas visible des fonctions déployées (Vercel), l'API (`/api/places`,
+`/api/maps`) bascule automatiquement sur cette copie versionnée — l'accueil
+et la page Cartes affichent toujours 6 cartes, sans appel CDS.
+
 > **Blocage connu :** `derived-era5-single-levels-daily-statistics` renvoie
 > `403 — Conditions d'utilisation non acceptées` tant que les conditions du
 > jeu de données ne sont pas acceptées dans le navigateur :

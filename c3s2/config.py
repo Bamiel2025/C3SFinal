@@ -68,6 +68,9 @@ MAPS_DIR = DATA_DIR / "maps"
 PRECOMPUTED_DIR = DATA_DIR / "precomputed"
 #: Dossier des fonds de carte GeoJSON (déployé avec le code, lecture seule).
 STATIC_MAPS_DIR = PROJECT_ROOT / "data" / "maps"
+#: Copie des cartes statiques JSON livrée avec le code : le dossier `public/`
+#: étant servi par le CDN, il n'est pas visible des fonctions (Vercel).
+BUNDLED_MAPS_DIR = PROJECT_ROOT / "data" / "static_maps"
 
 for _d in (CACHE_DIR, MAPS_DIR, PRECOMPUTED_DIR):
     _d.mkdir(parents=True, exist_ok=True)

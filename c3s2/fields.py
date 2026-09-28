@@ -39,9 +39,21 @@ MAX_CELLS = 14_000
 # --------------------------------------------------------------------------- #
 
 
+def _maps_dir() -> Path:
+    """Dossier des cartes statiques : `public/` en local, copie livrée sinon.
+
+    Le dossier `public/` étant servi par le CDN, les fonctions déployées
+    (Vercel) ne le voient pas : on bascule alors sur `data/static_maps`,
+    versionné avec le code et synchronisé par `scripts/prepare_maps.py`.
+    """
+    if (PUBLIC_MAPS_DIR / "index.json").is_file():
+        return PUBLIC_MAPS_DIR
+    return config.BUNDLED_MAPS_DIR
+
+
 def list_maps() -> list[dict[str, Any]]:
     """Inventaire des cartes statiques disponibles."""
-    index = PUBLIC_MAPS_DIR / "index.json"
+    index = _maps_dir() / "index.json"
     if not index.is_file():
         return []
     try:
@@ -54,7 +66,7 @@ def load_map(map_id: str) -> dict[str, Any]:
     """Charge une carte statique par son identifiant."""
     if not map_id.replace("_", "").replace("-", "").isalnum():
         raise KeyError(f"Identifiant de carte invalide : {map_id!r}")
-    path = PUBLIC_MAPS_DIR / f"{map_id}.json"
+    path = _maps_dir() / f"{map_id}.json"
     if not path.is_file():
         raise KeyError(
             f"Carte inconnue : {map_id!r}. Disponibles : "

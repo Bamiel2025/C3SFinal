@@ -166,6 +166,31 @@ def test_map_unknown_id() -> None:
     assert r.status_code in {404, 503}
 
 
+def test_bundled_maps_copy() -> None:
+    """La copie livrée avec le code contient les 6 cartes (repli Vercel)."""
+    import json
+
+    index_path = config.BUNDLED_MAPS_DIR / "index.json"
+    assert index_path.is_file(), "lancez scripts/prepare_maps.py (sync_bundled)"
+    bundled = json.loads(index_path.read_text(encoding="utf-8"))
+    assert len(bundled) == 6
+    for entry in bundled:
+        payload_path = config.BUNDLED_MAPS_DIR / f"{entry['id']}.json"
+        assert payload_path.is_file()
+        payload = json.loads(payload_path.read_text(encoding="utf-8"))
+        assert payload["z"] and payload["lat"] and payload["lon"]
+
+
+def test_maps_fallback_without_public(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Sans `public/` (cas Vercel), l'API sert la copie livrée : jamais 0 carte."""
+    from c3s2 import fields
+
+    monkeypatch.setattr(fields, "PUBLIC_MAPS_DIR", config.BUNDLED_MAPS_DIR / "inexistant")
+    assert fields._maps_dir() == config.BUNDLED_MAPS_DIR
+    assert len(fields.list_maps()) == 6
+    assert fields.load_map("t2m_juillet")["unit"] == "°C"
+
+
 def test_spa_serves_index_html() -> None:
     for path in ("/", "/activites/ocean_continent", "/cartes"):
         r = client.get(path)

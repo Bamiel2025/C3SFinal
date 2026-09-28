@@ -49,6 +49,29 @@ def log(message: str) -> None:
     print(f"[{time.strftime('%H:%M:%S')}] {message}", flush=True)
 
 
+def sync_bundled() -> int:
+    """Copie les cartes statiques vers `data/static_maps` (livré avec le code).
+
+    Le dossier `public/` étant servi par le CDN, les fonctions déployées ne le
+    voient pas : cette copie versionnée garantit 6 cartes partout, sans appel CDS.
+    """
+    bundled = config.BUNDLED_MAPS_DIR
+    bundled.mkdir(parents=True, exist_ok=True)
+    count = 0
+    for name in ["index.json"] + [f"{map_id}.json" for map_id in ALL_IDS]:
+        src = fields.PUBLIC_MAPS_DIR / name
+        if not src.is_file():
+            log(f"  {name}: absente de public/, ignorée.")
+            continue
+        dst = bundled / name
+        if dst.is_file() and dst.stat().st_size == src.stat().st_size:
+            continue
+        dst.write_bytes(src.read_bytes())
+        count += 1
+    log(f"Copie livrée : {count} fichier(s) dans {bundled}.")
+    return count
+
+
 def build_one(map_id: str, force: bool) -> bool:
     target = fields.PUBLIC_MAPS_DIR / f"{map_id}.json"
     if target.is_file() and not force:
@@ -101,6 +124,7 @@ def main(argv: list[str] | None = None) -> int:
 
     index = fields.list_maps()
     log(f"Terminé : {done} carte(s) écrite(s), inventaire = {len(index)} entrée(s).")
+    sync_bundled()
     return 0 if done or ids else 1
 
 
