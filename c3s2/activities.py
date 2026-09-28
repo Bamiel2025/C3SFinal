@@ -52,7 +52,6 @@ class Activity:
     default_cities: tuple[str, ...] = ()
     variables: tuple[str, ...] = ("2m_temperature",)
     chart: str = "climato"
-    teacher_tip: str = ""
     difficulty: int = 1
     #: Source de données requise : `auto` laisse l'application choisir.
     source: str = "auto"
@@ -85,7 +84,6 @@ class Activity:
             "cities": list(self.default_cities),
             "variables": list(self.variables),
             "chart": self.chart,
-            "teacher_tip": self.teacher_tip,
             "difficulty": self.difficulty,
             "source": self.source,
             "keywords": list(self.keywords),
@@ -100,7 +98,7 @@ class Activity:
 
 OCEAN_CONTINENT = Activity(
     key="ocean_continent",
-    title="Océan ou continent : d'où vient l'amplitude thermique ?",
+    title="Brest ou Strasbourg : pourquoi n'ont-elles pas le même climat ?",
     levels="5e · 4e",
     duration="55 min",
     subject="SVT · Physique-chimie · Géographie",
@@ -122,11 +120,6 @@ OCEAN_CONTINENT = Activity(
     variables=("2m_temperature",),
     chart="climato",
     keywords=("amplitude", "inertie", "océan", "continent"),
-    teacher_tip=(
-        "Faites d'abord formuler une hypothèse au tableau avant d'afficher la "
-        "normale mensuelle. Le passage de la mesure à l'explication mécanique est "
-        "le cœur de la séance : ne le faites pas à la place des élèves."
-    ),
     steps=(
         Step(
             title="Mesurer l'hiver",
@@ -163,8 +156,8 @@ OCEAN_CONTINENT = Activity(
         Step(
             title="Expliquer l'écart",
             instruction=(
-                "Qu'est-ce qui explique que deux villes de même latitude présentent "
-                "des amplitudes aussi différentes ?"
+                "Pourquoi Brest et Strasbourg, à la même latitude, ont-elles des "
+                "amplitudes si différentes ?"
             ),
             expected=(
                 "L'eau se réchauffe et se refroidit beaucoup plus lentement que la "
@@ -179,9 +172,8 @@ OCEAN_CONTINENT = Activity(
         Step(
             title="Prévoir puis vérifier",
             instruction=(
-                "Prédis l'amplitude thermique annuelle de Marseille, ville "
-                "méditerranéenne, puis vérifie-la : se classe-t-elle entre "
-                "Brest et Strasbourg ?"
+                "Prédis l'amplitude de Marseille, puis vérifie avec les données : "
+                "est-elle entre Brest et Strasbourg ?"
             ),
             expected=(
                 "Une amplitude de l'ordre de 14 à 15 °C, soit bien plus qu'à Brest : "
@@ -203,7 +195,7 @@ OCEAN_CONTINENT = Activity(
 
 CYCLE_EAU = Activity(
     key="cycle_eau",
-    title="Cycle de l'eau : d'où viennent les précipitations ?",
+    title="Marseille et Dakar : d'où vient la pluie ?",
     levels="5e · 4e",
     duration="55 min",
     subject="SVT · Physique-chimie (changements d'état)",
@@ -226,12 +218,6 @@ CYCLE_EAU = Activity(
     variables=("2m_temperature", "total_precipitation"),
     chart="ombro",
     keywords=("mousson", "ombrothermie", "méditerranéen", "cumul"),
-    teacher_tip=(
-        "Rappeler l'expérience de la serre : air chaud chargé de vapeur qui se "
-        "refroidit et se condense. Le nuage et la pluie ne sont que cela, à "
-        "l'échelle d'un continent. Insister sur la différence entre cumul annuel "
-        "et répartition mensuelle : c'est la confusion la plus fréquente."
-    ),
     steps=(
         Step(
             title="Repérer le minimum",
@@ -250,9 +236,8 @@ CYCLE_EAU = Activity(
         Step(
             title="Confronter chaleur et pluie",
             instruction=(
-                "Compare, pour juillet et août à Marseille, la température moyenne "
-                "et le cumul de pluie : le mois le plus chaud est-il aussi le plus "
-                "humide ?"
+                "Le mois le plus chaud de Marseille est-il aussi le plus humide ? "
+                "Vérifie avec juillet et août."
             ),
             expected=(
                 "Non : juillet-août sont à la fois les mois les plus chauds "
@@ -283,9 +268,8 @@ CYCLE_EAU = Activity(
         Step(
             title="Expliquer la saison des pluies",
             instruction=(
-                "Pourquoi Dakar reçoit-elle 250 mm en juillet-septembre pendant "
-                "que Marseille reste sèche, alors que les deux villes ont un été "
-                "chaud ?"
+                "Pourquoi Dakar reçoit-elle 250 mm en juillet-septembre alors que "
+                "Marseille reste sèche ?"
             ),
             expected=(
                 "En juillet-septembre, l'été boréal réchauffe l'Atlantique "
@@ -310,7 +294,7 @@ CYCLE_EAU = Activity(
 
 RECHAUFFEMENT = Activity(
     key="rechauffement",
-    title="Mesurer le réchauffement climatique avec des données",
+    title="Paris se réchauffe-t-il vraiment ?",
     levels="4e · 3e",
     duration="55 min",
     subject="SVT · Mathématiques",
@@ -334,12 +318,6 @@ RECHAUFFEMENT = Activity(
     source="auto",
     keywords=("anomalie", "normale", "tendance", "décennie"),
     difficulty=2,
-    teacher_tip=(
-        "Insister sur la normale 1991-2020 de l'OMM : comparer une période à "
-        "elle-même est la seule méthode qui rende les chiffres comparables entre "
-        "villes et entre pays. Faire écrire aux élèves la phrase de conclusion "
-        "avant de révéler le corrigé."
-    ),
     steps=(
         Step(
             title="Calculer la hausse observée",
@@ -418,7 +396,7 @@ RECHAUFFEMENT = Activity(
 
 CARTES = Activity(
     key="cartes_climatiques",
-    title="Lire une carte climatique sans se tromper",
+    title="Lire une carte des températures de l'Europe",
     levels="4e · 3e",
     duration="55 min",
     subject="Géographie · SVT",
@@ -441,12 +419,6 @@ CARTES = Activity(
     chart="map",
     keywords=("carte", "isotherme", "normal", "climat"),
     difficulty=2,
-    teacher_tip=(
-        "Faire alterner janvier et juillet avant de commenter : c'est le "
-        "contraste entre les deux cartes qui fait comprendre l'effet continent "
-        "et l'effet de mer. Insister sur le fait qu'une carte de moyenne n'est "
-        "pas une carte du temps."
-    ),
     steps=(
         Step(
             title="Lire la normale de janvier",
@@ -523,7 +495,7 @@ CARTES = Activity(
 
 VENT_PRESSION = Activity(
     key="vent_pression",
-    title="Pression atmosphérique et direction du vent",
+    title="Pourquoi le vent souffle-t-il ?",
     levels="3e · 4e",
     duration="55 min",
     subject="Physique-chimie · SVT",
@@ -547,11 +519,6 @@ VENT_PRESSION = Activity(
     source="cds",
     keywords=("pression", "vent", "isobare", "gradient"),
     difficulty=3,
-    teacher_tip=(
-        "Rappeler que le vent ne franchit pas perpendiculairement les isobares : "
-        "la rotation de la Terre le dévie (force de Coriolis), ce qui explique le "
-        "tourbillon autour des dépressions de l'hémisphère nord."
-    ),
     steps=(
         Step(
             title="Repérer la valeur de référence",
@@ -627,7 +594,7 @@ VENT_PRESSION = Activity(
 
 LATITUDE = Activity(
     key="latitude",
-    title="Latitude et température : pourquoi fait-il froid aux pôles ?",
+    title="Pourquoi fait-il froid aux pôles ?",
     levels="4e · 3e",
     duration="55 min",
     subject="Physique-chimie · SVT · Géographie",
@@ -650,11 +617,6 @@ LATITUDE = Activity(
     chart="climato",
     keywords=("latitude", "rayonnement", "obliquité", "saison"),
     difficulty=2,
-    teacher_tip=(
-        "Dérouler l'activité en deux temps : la prédiction écrite d'abord, la "
-        "donnée ensuite. C'est la confrontation entre les deux qui produit "
-        "l'apprentissage — pas le graphique lui-même."
-    ),
     steps=(
         Step(
             title="Prédire sans regarder",
@@ -730,7 +692,7 @@ LATITUDE = Activity(
 
 AVANT_APRES = Activity(
     key="avant_apres",
-    title="Comparer deux périodes : a-t-il vraiment changé ?",
+    title="Paris a-t-il changé ? Comparons deux époques",
     levels="4e · 3e",
     duration="55 min",
     subject="Mathématiques · SVT · Géographie",
@@ -753,17 +715,12 @@ AVANT_APRES = Activity(
     chart="compare",
     keywords=("comparaison", "période", "anomalie", "moyenne"),
     difficulty=2,
-    teacher_tip=(
-        "Faire remarquer que l'écart n'est pas le même en hiver et en été : "
-        "le réchauffement n'est pas uniforme sur l'année. C'est un point que les "
-        "manuels omettent souvent."
-    ),
     steps=(
         Step(
             title="Choisir les périodes",
             instruction=(
-                "Quelles deux périodes de trente ans peux-tu comparer avec les "
-                "données disponibles, qui commencent en 1940 ?"
+                "Quelles deux périodes de trente ans peux-tu comparer ? "
+                "(les données commencent en 1940)"
             ),
             expected=(
                 "Par exemple 1901-1930 (ou 1941-1970, première période "
@@ -858,11 +815,6 @@ CANICULE = Activity(
     source="cds",
     keywords=("canicule", "seuil", "journalier", "santé"),
     difficulty=3,
-    teacher_tip=(
-        "L'indicateur est un choix, pas une donnée : c'est la leçon de cette "
-        "activité, à prolonger par un débat sur les seuils d'alerte canicule de "
-        "Météo-France et le rôle de la vigilance sanitaire."
-    ),
     steps=(
         Step(
             title="Formuler une hypothèse",
@@ -937,7 +889,7 @@ CANICULE = Activity(
 
 PLUIES_EUROPE = Activity(
     key="pluies_europe",
-    title="Carte de précipitations : où pleut-il en hiver et en été ?",
+    title="Où pleut-il en Europe, en hiver et en été ?",
     levels="4e · 3e",
     duration="55 min",
     subject="Géographie · SVT",
@@ -961,11 +913,6 @@ PLUIES_EUROPE = Activity(
     chart="map",
     keywords=("précipitations", "carte", "relief", "saison"),
     difficulty=2,
-    teacher_tip=(
-        "Faire lire des valeurs avant toute interprétation : l'erreur classique "
-        "est de commenter un « beau temps » au lieu de cumuls en mm/mois. Le "
-        "cas des Alpes, plus arrosées en été qu'en hiver, surprend toujours."
-    ),
     steps=(
         Step(
             title="Décrire janvier",
@@ -987,9 +934,8 @@ PLUIES_EUROPE = Activity(
         Step(
             title="Comparer les saisons",
             instruction=(
-                "Calcule la baisse des pluies entre janvier et juillet à "
-                "Marseille (57 vers 21 mm) et en Écosse (120 vers 94 mm) : où la "
-                "baisse est-elle la plus forte, en mm et en proportion ?"
+                "Calcule la baisse des pluies entre janvier et juillet à Marseille "
+                "et en Écosse : où la baisse est-elle la plus forte ?"
             ),
             expected=(
                 "Marseille : −36 mm, soit −63 %. Écosse : −26 mm, soit −22 %. "
@@ -1048,7 +994,7 @@ PLUIES_EUROPE = Activity(
 
 REGIMES_MONDE = Activity(
     key="regimes_monde",
-    title="Trois villes, trois régimes : Singapour, Paris, Longyearbyen",
+    title="Singapour, Paris, Longyearbyen : trois climats à comparer",
     levels="5e · 4e",
     duration="55 min",
     subject="SVT · Géographie",
@@ -1071,11 +1017,6 @@ REGIMES_MONDE = Activity(
     chart="climato",
     keywords=("régime", "amplitude", "latitude", "équateur"),
     difficulty=1,
-    teacher_tip=(
-        "Laisser les élèves manipuler les trois nombres (janvier, juillet, "
-        "amplitude) avant toute explication : le tableau comparatif est le "
-        "cœur de la séance. Singapour surprend toujours par sa régularité."
-    ),
     steps=(
         Step(
             title="Décrire l'année",
@@ -1111,9 +1052,8 @@ REGIMES_MONDE = Activity(
         Step(
             title="Mettre en relation",
             instruction=(
-                "Relie chaque amplitude à la latitude de sa ville (1°, 49°, "
-                "78° N) et aux cumuls annuels de pluie (Singapour 2390 mm, Paris "
-                "732 mm, Longyearbyen 541 mm) : que constates-tu ?"
+                "Relie chaque amplitude à sa latitude et à sa pluie annuelle : "
+                "que remarques-tu ?"
             ),
             expected=(
                 "L'amplitude croît avec la latitude pendant que la moyenne "
@@ -1154,7 +1094,7 @@ REGIMES_MONDE = Activity(
 
 PORTRAIT_CLIMAT = Activity(
     key="portrait_climat",
-    title="Portrait climatique : décris le climat de Bordeaux",
+    title="Décris le climat de Bordeaux",
     levels="4e · 3e",
     duration="55 min",
     subject="SVT · Géographie · Français",
@@ -1177,11 +1117,6 @@ PORTRAIT_CLIMAT = Activity(
     chart="climato",
     keywords=("portrait", "synthèse", "régime", "Bordeaux"),
     difficulty=2,
-    teacher_tip=(
-        "Exiger les quatre nombres dans la phrase finale : c'est le critère "
-        "qui distingue un portrait scientifique d'une impression. Faire "
-        "comparer avec la ville d'origine des élèves quand c'est possible."
-    ),
     steps=(
         Step(
             title="Décrire les températures",
@@ -1216,9 +1151,8 @@ PORTRAIT_CLIMAT = Activity(
         Step(
             title="Comparer à un témoin",
             instruction=(
-                "Compare l'amplitude et la pluie d'été de Bordeaux (15,0 °C ; "
-                "181 mm en juin-août) à celles de Marseille (14,5 °C ; 47 mm) : "
-                "quelle ville a l'été le plus sec ?"
+                "Compare l'été de Bordeaux et celui de Marseille : quelle ville "
+                "a l'été le plus sec ?"
             ),
             expected=(
                 "Marseille, et de loin : 47 mm en trois mois d'été contre "

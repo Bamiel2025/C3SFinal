@@ -152,6 +152,10 @@
     }
     try {
       await ensureData();
+      if (matched.route === "/aide" && !(await teacherVerified())) {
+        renderAideLock(main);
+        return;
+      }
       await matched.render(main, params);
     } catch (err) {
       console.error(err);
@@ -164,6 +168,29 @@
   function notFound(path) {
     return '<div class="card"><h2>Page introuvable</h2><p class="muted">Aucune route pour <code>' +
       esc(path) + '</code>.</p><p><a class="btn" href="#/">Retour à l\'accueil</a></p></div>';
+  }
+
+  async function teacherVerified() {
+    const code = (state.teacherCode || "").trim();
+    if (!code) return false;
+    try {
+      const out = await api("api/teacher/unlock", { method: "POST", body: { code } });
+      return !!out.ok;
+    } catch (e) { return false; }
+  }
+
+  function renderAideLock(main) {
+    html(main, `
+      <div class="section-head">
+        <p class="eyebrow">Espace professeur</p>
+        <h1>Aide &amp; CDS : accès réservé</h1>
+        <p>Cette page (connexion au CDS, fichiers de données, dépannage) est
+        destinée au professeur. Saisis le code enseignant pour l'ouvrir.</p>
+      </div>
+      ${teacherBoxMarkup()}
+      <p style="margin-top:1rem"><a class="btn btn-ghost" href="#/">Retour à l'accueil</a></p>
+    `);
+    bindTeacherBox(main, () => router());
   }
 
   async function ensureData() {
@@ -181,7 +208,6 @@
     }
     const cfg = state.config;
     const places = state.places;
-    const key = cfg.key_diagnosis || {};
     const cards = (places.maps || []).length;
 
     const activities = state.activities || { activities: [] };
@@ -192,10 +218,9 @@
         <p class="eyebrow" style="color:#f2a541">Laboratoire de climatologie</p>
         <h1>Le climat se lit dans les données</h1>
         <p class="lead">
-          C3S² réunit ${places.cities.length} villes, ${cards} cartes climatiques et ${actList.length}
-          activités prêtes à projeter, construites à partir des analyses ERA5 du
-          Climate Data Store (Copernicus). Températures, précipitations, pression :
-          tout est mesuré, converti et expliqué — rien n'est inventé.
+          Explore ${places.cities.length} villes et ${cards} cartes construites à partir de
+          vraies mesures du climat (ERA5, Copernicus), ou suis une activité guidée :
+          une question à la fois, avec des températures et des pluies réelles.
         </p>
         <div class="hero-actions">
           <a class="btn btn-warm" href="#/explorateur">Ouvrir l'explorateur</a>
@@ -209,12 +234,7 @@
         </div>
       </section>
 
-      <div class="section-head">
-        <p class="eyebrow">État de l'application</p>
-        <h2>Prête pour la classe</h2>
-      </div>
-
-      <div class="stat-strip">
+      <div class="stat-strip" style="margin-top:1.2rem">
         <div class="stat accent-temp">
           <dt>Villes</dt>
           <dd>${places.cities.length}<small>dont ${places.domains.length} domaines</small></dd>
@@ -224,72 +244,17 @@
           <dd>${actList.length}<small>1 question / étape</small></dd>
         </div>
         <div class="stat accent-press">
-          <dt>Cartes statiques</dt>
-          <dd>${cards}<small>servies hors ligne</small></dd>
-        </div>
-        <div class="stat accent-wind">
-          <dt>Clé CDS</dt>
-          <dd style="font-size:1.05rem">${key.ok ? "configurée" : (cfg.cds && cfg.cds.configured ? "à vérifier" : "absente")}</dd>
+          <dt>Cartes</dt>
+          <dd>${cards}<small>températures, pluies, vent</small></dd>
         </div>
       </div>
 
-      <div class="grid grid-3" style="margin-top:1.4rem">
-        <div class="card">
-          <div class="eyebrow">Instantané</div>
-          <h3>Lecture pré-calculée</h3>
-          <p class="small muted">Les séries mensuelles des villes sont déjà dans le dépôt : le graphique s'affiche en moins d'une seconde, sans clé ni attente.</p>
-          <span class="badge badge-ok">${cfg.precomputed.filter(f => f.status === "prêt").length} fichiers prêts</span>
-        </div>
-        <div class="card">
-          <div class="eyebrow">Direct</div>
-          <h3>Requête Climate Data Store</h3>
-          <p class="small muted">Une période hors couverture ou un champ spatial se télécharge réellement depuis le CDS : comptez 20 à 90 secondes, et la requête est montrée aux élèves.</p>
-          <span class="badge badge-cds">${key.ok ? "clé opérationnelle" : "clé à vérifier"}</span>
-        </div>
-        <div class="card">
-          <div class="eyebrow">Pédagogie</div>
-          <h3>Une question à la fois</h3>
-          <p class="small muted">Chaque étape pose une seule question, formulée sur le climat (valeurs, amplitudes, évolutions) et jamais sur la forme de la courbe.</p>
-          <a class="btn btn-sm btn-quiet" href="#/activites">Ouvrir les fiches</a>
-        </div>
-      </div>
-
-      <div class="grid grid-2" style="margin-top:1.2rem">
-        <div class="card">
-          <div class="card-title"><h3>Connexion au CDS</h3>${key.ok ? '<span class="badge badge-ok">OK</span>' : '<span class="badge badge-warn">à vérifier</span>'}</div>
-          <p class="small muted">${esc(cfg.cds.url || "")} · clé ${esc(cfg.cds.masked_key || "—")}</p>
-          <div class="row">
-            <button class="btn btn-sm" id="home-test">Tester la connexion</button>
-            <a class="btn btn-sm btn-ghost" href="#/aide">Détails &amp; dépannage</a>
-          </div>
-          <div id="home-test-out" class="small" style="margin-top:.7rem"></div>
-        </div>
-        <div class="card">
-          <div class="card-title"><h3>Crédits et licence</h3></div>
-          <p class="small">${esc(cfg.attribution)}</p>
-          <p class="small muted">${esc(cfg.citation)}</p>
-          <p class="small muted">Licence des données : ${esc(cfg.licence)}</p>
-        </div>
+      <div class="card" style="margin-top:1.4rem">
+        <p class="small">${esc(cfg.attribution)}</p>
+        <p class="small muted">Licence des données : ${esc(cfg.licence)}</p>
       </div>
     `;
 
-    const btn = el("home-test");
-    if (btn) {
-      btn.addEventListener("click", async () => {
-        btn.disabled = true;
-        btn.textContent = "Test en cours…";
-        try {
-          const out = await api("api/cds/test", { method: "POST", body: { deep: false } });
-          html("home-test-out", reportMarkup(out.report));
-          toast(out.report.ok ? "Connexion au CDS réussie." : "Connexion impossible.", out.report.ok ? "ok" : "err");
-        } catch (err) {
-          html("home-test-out", '<div class="callout callout-warn">' + esc(err.message) + "</div>");
-        } finally {
-          btn.disabled = false;
-          btn.textContent = "Tester la connexion";
-        }
-      });
-    }
   }
 
   function reportMarkup(report) {
@@ -897,18 +862,10 @@
           ${state.unlocked ? '<span class="badge badge-ok">corrigés visibles</span>' : ""}
         </div>
         <p>${esc(act.introduction)}</p>
-        <div class="grid grid-2">
-          <div>
-            <h3>Objectif</h3>
-            <p class="small">${esc(act.objective)}</p>
-            <h3>Compétences travaillées</h3>
-            <ul class="small">${act.skills.map(s => "<li>" + esc(s) + "</li>").join("")}</ul>
-          </div>
-          <div>
-            <h3>Conseil à l'enseignant</h3>
-            <div class="callout callout-warn"><p>${esc(act.teacher_tip)}</p></div>
-          </div>
-        </div>
+        <h3>Objectif</h3>
+        <p class="small">${esc(act.objective)}</p>
+        <h3>Ce que tu vas apprendre à faire</h3>
+        <ul class="small">${act.skills.map(s => "<li>" + esc(s) + "</li>").join("")}</ul>
       </div>
 
       ${state.unlocked ? "" : `<div style="margin-top:1.1rem">${teacherBoxMarkup()}</div>`}

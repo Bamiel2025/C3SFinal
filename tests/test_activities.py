@@ -28,7 +28,7 @@ def test_ten_activities_with_four_steps() -> None:
     assert len(set(keys)) == len(keys)
     for act in ALL:
         assert len(act.steps) == 4, act.key
-        assert act.title and act.introduction and act.teacher_tip
+        assert act.title and act.introduction
         assert act.default_cities
         for step in act.steps:
             assert step.title and step.instruction

@@ -2,7 +2,7 @@
 
 Application web pédagogique pour découvrir le climat avec les **données réelles
 ERA5** (Copernicus Climate Data Store / C3S), reconstruite en FastAPI +
-JavaScript sans Streamlit : graphiques interactifs, cartes, et **8 activités
+JavaScript sans Streamlit : graphiques interactifs, cartes, et **10 activités
 séquencées en une question par étape**, corrigées avec les valeurs mesurées.
 
 - Données : ERA5, moyennes mensuelles **1991-2020** (normale OMM), série
@@ -15,11 +15,11 @@ séquencées en une question par étape**, corrigées avec les valeurs mesurées
 
 | Module | Ce qu'il fait |
 | --- | --- |
-| **Accueil** | État des données, de la clé CDS, accès rapide aux activités. |
+| **Accueil** | Page simple pour les élèves : présentation, 3 chiffres clés, accès rapide. Aucune information technique. |
 | **Explorateur** | Climatogramme, diagramme ombrothermique, série annuelle + tendance, anomalies, comparaison de deux périodes de 30 ans, pour 31 villes et 6 variables. |
-| **Activités** | 10 fiches (une question par étape, indice, durée, graphique associé). Les corrigés ne s'affichent qu'avec le **code enseignant**. La fiche *jours de chaleur* (données journalières) est suspendue en attendant `scripts/prepare_data.py heat`. |
+| **Activités** | 10 fiches aux titres simples (une question par étape, indice, durée, graphique associé). Les corrigés ne s'affichent qu'avec le **code enseignant**. La fiche *jours de chaleur* (données journalières) est suspendue en attendant `scripts/prepare_data.py heat`. |
 | **Cartes** | 6 cartes statiques ERA5 (température janvier/juillet, précipitations janvier/juillet, pression janvier, vent + flèches). |
-| **Aide** | Sources, unités, état des fichiers pré-calculés, diagnostic de la clé CDS. |
+| **Aide · prof** | Réservée au professeur (**code enseignant requis**) : sources, unités, état des fichiers pré-calculés, diagnostic de la clé CDS. |
 
 ## Structure
 

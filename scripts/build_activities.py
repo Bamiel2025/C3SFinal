@@ -562,11 +562,8 @@ def render_activity(act: activities.Activity) -> str:
     <h2>Objectif</h2>
     <p>{esc(act.objective)}</p>
     <p>{esc(act.introduction)}</p>
-    <h2>Compétences travaillées</h2>
+    <h2>Ce que tu vas apprendre à faire</h2>
     <p>{" · ".join(esc(s) for s in act.skills)}</p>
-  </section>
-  <section class="card tip">
-    <b>Conseil à l'enseignant.</b> {esc(act.teacher_tip)}
   </section>
   <section class="card teacher no-print" id="lock-form">
     <b>Code enseignant</b>
