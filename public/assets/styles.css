@@ -465,6 +465,32 @@ table.data tbody tr:hover { background: #f7f9fd; }
   * { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 
+/* --------------------------------------------------------- Sujet type brevet */
+
+.exam-card { border-top: 4px solid var(--gold); }
+.exam-rappel {
+  margin: .8rem 0; padding: .7rem .9rem; background: #f6f9ff;
+  border-left: 4px solid var(--rain-dark, #2f6fb5);
+  border-radius: 0 var(--r) var(--r) 0; font-size: .95rem;
+}
+.exam-doc {
+  margin: 1rem 0; padding: .9rem 1rem; background: #fbfcfe;
+  border: 1px solid var(--line); border-radius: var(--r);
+}
+.exam-doc h4 { margin: 0 0 .35rem; font-size: .98rem; }
+.exam-doc .chart, .exam-doc table { margin-top: .6rem; }
+.exam-table { font-size: .92rem; }
+.exam-q {
+  margin: .9rem 0; padding: .9rem 1rem; background: var(--card);
+  border: 1px solid var(--line); border-radius: var(--r);
+}
+.exam-q-head { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-bottom: .35rem; }
+.exam-answer {
+  margin-top: .7rem; padding: .8rem 1rem; background: #e9f7f1;
+  border-left: 4px solid var(--ok); border-radius: 0 var(--r) var(--r) 0;
+  font-size: .95rem;
+}
+
 /* -------------------------------------------------------------------------- Impression (fiche élève) */
 
 @media print {
@@ -473,5 +499,5 @@ table.data tbody tr:hover { background: #f7f9fd; }
   .main { max-width: none; padding: 0; }
   .step, .card { box-shadow: none; break-inside: avoid; border-color: #bbb; }
   .chart { min-height: 260px; }
-  .step-answer, .step-hint { display: none; }
+  .step-answer, .step-hint, .exam-answer { display: none; }
 }

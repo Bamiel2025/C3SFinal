@@ -17,7 +17,8 @@ séquencées en une question par étape**, corrigées avec les valeurs mesurées
 | --- | --- |
 | **Accueil** | Page simple pour les élèves : présentation, 3 chiffres clés, accès rapide. Aucune information technique. |
 | **Explorateur** | Climatogramme, diagramme ombrothermique, série annuelle + tendance, anomalies, comparaison de deux périodes de 30 ans, pour 31 villes et 6 variables. |
-| **Activités** | 10 fiches aux titres simples (une question par étape, indice, durée, graphique associé). Les corrigés ne s'affichent qu'avec le **code enseignant**. La fiche *jours de chaleur* (données journalières) est suspendue en attendant `scripts/prepare_data.py heat`. |
+| **Activités** | 12 fiches séquencées en **4 étapes**, chacune ouverte par une **consigne unique** (verbe d'action + livrable), avec piste, durée et graphique associé. Les corrigés ne s'affichent qu'avec le **code enseignant**. La fiche *jours de chaleur* (données journalières) est suspendue en attendant `scripts/prepare_data.py heat`. |
+| **Sujet type brevet** | Les activités *Paris se réchauffe-t-il vraiment ?* et *El Niño* comportent en plus un **sujet type DNB** : contexte, 3 documents (graphiques, tableaux), 4 questions de difficulté croissante pour **16 points en 25 min**, corrigés verrouillés. |
 | **Cartes** | 6 cartes statiques ERA5 (température janvier/juillet, précipitations janvier/juillet, pression janvier, vent + flèches). |
 | **Aide · prof** | Réservée au professeur (**code enseignant requis**) : sources, unités, état des fichiers pré-calculés, diagnostic de la clé CDS. |
 
@@ -115,7 +116,9 @@ téléchargé) :
 Les corrigés sont embarqués **chiffrés** dans chaque fiche : ils n'apparaissent
 ni à l'écran ni dans le code source tant que le **code enseignant (2027)**
 n'est pas saisi. Le code est mémorisé par le navigateur ; le bouton
-*Verrouiller* le réinitialise.
+*Verrouiller* le réinitialise. Les fiches *rechauffement* et *elnino*
+portent en plus la section **Sujet type brevet** (documents, questions et
+corrigés verrouillés de la même façon).
 
 Régénérer les fiches après modification des données ou des corrigés :
 
@@ -135,11 +138,15 @@ Playwright (`C:\Users\brice\.agents\skills\playwright`, script
 pytest -q
 ```
 
-Deux familles : contrat de l'API (`/api/*`, SPA, fichiers statiques) et
+Trois familles : contrat de l'API (`/api/*`, SPA, fichiers statiques) ;
 **cohérence chiffrée des corrigés** — les valeurs citées dans les corrigés sont
 recalculées à partir des CSV (amplitudes Brest/Strasbourg/Marseille, totaux
-Marseille/Dakar, tendance de Paris…). Un corrigé qui contredit les données fait
-échouer la suite de tests.
+Marseille/Dakar, tendance de Paris…) ; et **charte de rédaction** — les 48
+consignes doivent commencer par un verbe d'action, poser au plus une question,
+ne jamais livrer la réponse, et les sujets type brevet doivent passer la
+grille qualité (contexte ≥ 180 signes, 3 documents rendables, 4 questions,
+barème cohérent, tableau recalculé depuis les données, corrigés masqués sans
+code). Un corrigé qui contredit les données fait échouer la suite de tests.
 
 ## Déploiement sur Vercel
 

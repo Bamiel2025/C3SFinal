@@ -870,6 +870,8 @@
         <ul class="small">${act.skills.map(s => "<li>" + esc(s) + "</li>").join("")}</ul>
       </div>
 
+      ${act.exam ? examMarkup(act.exam) : ""}
+
       ${state.unlocked ? "" : `<div style="margin-top:1.1rem">${teacherBoxMarkup()}</div>`}
 
       <div class="progress-track" id="progress">
@@ -905,6 +907,20 @@
     `;
 
     bindTeacherBox(main, () => renderActivity(main, params));
+
+    if (act.exam) {
+      document.querySelectorAll("[data-exam-answer]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const n = btn.getAttribute("data-exam-answer");
+          const target = document.querySelector('.exam-answer[data-exam="' + n + '"]');
+          if (target) {
+            target.hidden = !target.hidden;
+            btn.textContent = target.hidden ? "Voir le corrigé" : "Masquer le corrigé";
+          }
+        });
+      });
+      drawExamFigures(act);
+    }
 
     const ctx = { act, mapPayload, heatPayload, current: 1 };
     window.__c3sActivity = ctx;
@@ -946,6 +962,108 @@
     el("act-load") && el("act-load").addEventListener("click", () => renderActivity(main, params));
 
     setActiveStep(1);
+  }
+
+  function examMarkup(exam) {
+    return `
+      <section class="card exam-card" id="exam-subject">
+        <div class="panel-title">
+          <div>
+            <p class="eyebrow">Préparation au brevet</p>
+            <h2>Sujet type brevet</h2>
+            <div class="meta inline-list">
+              <span class="badge">${exam.duration} min</span>
+              <span class="badge badge-warn">${exam.points} points</span>
+              <span class="badge">${exam.documents.length} documents</span>
+              <span class="badge">${exam.questions.length} questions</span>
+            </div>
+          </div>
+          ${state.unlocked ? '<span class="badge badge-ok">corrigés visibles</span>' : ""}
+        </div>
+        <p>${esc(exam.contexte)}</p>
+        <div class="exam-rappel"><strong>Consigne :</strong> ${esc(exam.rappel)}</div>
+        ${exam.documents.map(examDocMarkup).join("")}
+        <h3>Questions <span class="small muted">(difficulté croissante)</span></h3>
+        ${exam.questions.map(examQuestionMarkup).join("")}
+        <p class="small muted">Thème : ${esc(exam.theme)}<br>
+          Sources : ${exam.sources.map(esc).join(" · ")}</p>
+      </section>
+    `;
+  }
+
+  function examDocMarkup(d) {
+    let visual = "";
+    if (d.chart === "table") {
+      const head = (d.table[0] || []).map(c => "<th>" + esc(c) + "</th>").join("");
+      const rows = d.table.slice(1).map(row =>
+        "<tr>" + row.map(c => "<td>" + esc(c) + "</td>").join("") + "</tr>").join("");
+      visual = '<table class="data exam-table"><thead><tr>' + head + "</tr></thead><tbody>" +
+        rows + "</tbody></table>";
+    } else if (d.chart === "figure") {
+      visual = '<div class="chart exam-fig" id="exam-fig-' + d.number + '">' +
+        '<img src="assets/figures/' + esc(d.file) + '" alt="' + esc(d.title) + '" ' +
+        'style="max-width:100%" onerror="this.remove()"></div>';
+    } else if (d.chart === "annual" || d.chart === "anomalies") {
+      visual = '<div class="chart exam-fig" id="exam-fig-' + d.number + '">' +
+        '<div class="chart-empty">Chargement…</div></div>';
+    }
+    return `
+      <figure class="exam-doc">
+        <h4>Document ${d.number} — ${esc(d.title)}</h4>
+        <p class="small">${esc(d.body)}</p>
+        ${visual}
+        ${d.caption ? `<figcaption class="small muted">${esc(d.caption)}</figcaption>` : ""}
+      </figure>
+    `;
+  }
+
+  function examQuestionMarkup(q) {
+    const unlocked = state.unlocked && q.expected;
+    return `
+      <div class="exam-q">
+        <div class="exam-q-head">
+          <strong>Question ${esc(q.id)}</strong>
+          <span class="badge">${q.points} pt${q.points > 1 ? "s" : ""}</span>
+          <span class="badge badge-cds">${esc(q.skill)}</span>
+        </div>
+        <p class="step-question">${esc(q.text)}</p>
+        ${unlocked
+          ? `<button class="btn btn-sm btn-warm" data-exam-answer="${esc(q.id)}">Voir le corrigé</button>
+             <div class="exam-answer" data-exam="${esc(q.id)}" hidden>
+               <strong>Ce qui est attendu :</strong> ${esc(q.attendu)}<br>
+               <strong>Corrigé :</strong> ${esc(q.expected)}
+             </div>`
+          : '<span class="small muted">Corrigé réservé au code enseignant</span>'}
+      </div>
+    `;
+  }
+
+  async function drawExamFigures(act) {
+    const exam = act.exam;
+    if (!exam) return;
+    for (const d of exam.documents) {
+      if (d.chart !== "annual" && d.chart !== "anomalies") continue;
+      const target = "#exam-fig-" + d.number;
+      const node = document.querySelector(target);
+      if (!node) continue;
+      try {
+        const cities = (act.cities.length ? act.cities : ["Paris"]).slice(0, 1);
+        const long = await api("api/series" + queryString({
+          cities: cities.join(","),
+          variable: "2m_temperature",
+          start: 1940,
+          end: 2024,
+          source: "auto"
+        }));
+        if (d.chart === "annual") {
+          Charts.annual(target, long);
+        } else {
+          Charts.anomalies(target, long, { city: cities[0] });
+        }
+      } catch (e) {
+        node.innerHTML = '<div class="chart-empty">Graphique indisponible.</div>';
+      }
+    }
   }
 
   function stepMarkup(act, step, n) {

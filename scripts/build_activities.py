@@ -291,7 +291,7 @@ def fig_nino_anom(filename: str) -> tuple[str, str, str]:
     sel = pd.concat([serie.loc["2025"], serie.loc["2026"]])
     anom = sel.values - base[sel.index.month].values
     colors = ["#c2312b" if v >= 0 else "#31688e" for v in anom]
-    labels = [d.strftime("%b %Y") for d in sel.index]
+    labels = [f"{MONTHS[d.month - 1]} {d.year}" for d in sel.index]
     fig, ax = plt.subplots(figsize=(8.6, 4.6))
     ax.bar(range(len(sel)), anom, color=colors)
     ax.axhline(0, color="black", lw=0.8)
@@ -317,7 +317,8 @@ def fig_nino_timeline(filename: str) -> tuple[str, str, str]:
     step = 6
     ax.set_xticks(range(0, len(window), step))
     ax.set_xticklabels(
-        [d.strftime("%b %Y") for d in window.index[::step]], rotation=45, ha="right", fontsize=8
+        [f"{MONTHS[d.month - 1]} {d.year}" for d in window.index[::step]],
+        rotation=45, ha="right", fontsize=8
     )
     ax.set_ylabel("Anomalie (°C)")
     ax.set_title("Anomalie mensuelle 2023-2026 — El Niño puis réchauffement 2026", pad=12)
@@ -347,15 +348,20 @@ def fig_nino_box(filename: str) -> tuple[str, str, str]:
 
 
 def data_figures(act_key: str, n: int) -> list[tuple[str, str, str]]:
-    """Figures de données pré-calculées (PNG servis aussi à l'application)."""
+    """Figures de données pré-calculées (PNG servis aussi à l'application).
+
+    El Niño : étape 1 = séries 2025/2026 (+ situation de la boîte),
+    étape 2 = anomalies mensuelles, étape 3 = chronologie 2023-2026,
+    étape 4 = situation de la boîte étudiée.
+    """
     if act_key == "elnino":
         if n == 1:
             return [fig_nino_series("elnino_1.png"), fig_nino_box("elnino_1b.png")]
         if n == 2:
-            return [fig_nino_series("elnino_2.png")]
+            return [fig_nino_anom("elnino_2.png")]
         if n == 3:
-            return [fig_nino_anom("elnino_3.png")]
-        return [fig_nino_timeline("elnino_4.png")]
+            return [fig_nino_timeline("elnino_3.png")]
+        return [fig_nino_box("elnino_4.png")]
     raise KeyError(f"Aucune figure de données pour : {act_key} (étape {n})")
 
 
@@ -599,6 +605,14 @@ input[type=password]{padding:.45rem .6rem;border:1px solid var(--line);border-ra
 .badge-ok{background:var(--okbg);color:var(--ok);border:1px solid #86efac}
 footer{color:var(--muted);font-size:.8rem;margin-top:2rem}
 .tip{background:var(--amberbg);border-left:4px solid #f59e0b;border-radius:0 10px 10px 0;padding:.6rem .9rem}
+.exam-rappel{background:#f6f9ff;border-left:4px solid var(--navy);border-radius:0 10px 10px 0;padding:.6rem .9rem;margin:.6rem 0}
+.exam-doc{border:1px solid var(--line);border-radius:10px;padding:.7rem .9rem;margin:.7rem 0;background:#fbfcfe}
+.exam-doc h4{margin:.1rem 0 .35rem;font-size:1rem;color:var(--navy)}
+.exam-table{width:100%;border-collapse:collapse;font-size:.92rem;margin:.5rem 0}
+.exam-table th,.exam-table td{border:1px solid var(--line);padding:.4rem .6rem;text-align:left}
+.exam-table th{background:#eef2ff;color:var(--navy);font-size:.85rem}
+.exam-q{border:1px solid var(--line);border-radius:10px;padding:.7rem .9rem;margin:.7rem 0}
+.exam-q h3{margin:.1rem 0}
 @media print{
   body{background:#fff}
   .topbar,.no-print{display:none !important}
@@ -745,8 +759,90 @@ def step_figures(act: activities.Activity) -> list[list[tuple[str, str, str]]]:
     return out
 
 
+def exam_doc_html(doc: activities.ExamDoc, act: activities.Activity) -> str:
+    """Un document du sujet type brevet (figure, graphique ou tableau)."""
+    visual = ""
+    if doc.chart in ("annual", "anomalies"):
+        city = (list(act.default_cities) or ["Paris"])[0]
+        kind, payload = fig_annual(city) if doc.chart == "annual" else fig_anomalies(city)
+        visual = figure_html(kind, payload, doc.caption)
+    elif doc.chart == "figure":
+        path = FIGURES_DIR / doc.file
+        if path.exists():
+            payload = base64.b64encode(path.read_bytes()).decode("ascii")
+            visual = figure_html("png", payload, doc.caption)
+        else:
+            visual = (
+                '<div class="hint"><b>Figure absente.</b> Relancez '
+                "<code>python scripts/build_activities.py</code> pour la générer.</div>"
+            )
+    elif doc.chart == "table" and doc.table:
+        head, *body = doc.table
+        head_html = "".join(f"<th>{esc(c)}</th>" for c in head)
+        body_html = "".join(
+            "<tr>" + "".join(f"<td>{esc(c)}</td>" for c in row) + "</tr>" for row in body
+        )
+        cap = f"<figcaption>{esc(doc.caption)}</figcaption>" if doc.caption else ""
+        visual = (
+            f'<table class="exam-table"><thead><tr>{head_html}</tr></thead>'
+            f"<tbody>{body_html}</tbody></table>{cap}"
+        )
+    return f"""
+      <figure class="exam-doc">
+        <h4>Document {doc.number} — {esc(doc.title)}</h4>
+        <p class="small">{esc(doc.body)}</p>
+        {visual}
+      </figure>"""
+
+
+def render_exam(act: activities.Activity) -> str:
+    """Section « Sujet type brevet » d'une fiche (corrigés chiffrés)."""
+    exam = act.exam
+    if exam is None:
+        return ""
+    docs_html = "".join(exam_doc_html(d, act) for d in exam.documents)
+    questions: list[str] = []
+    for q in exam.questions:
+        locked = lock_text(f"Attendu : {q.attendu}  Corrigé : {q.expected}")
+        questions.append(
+            f"""
+      <div class="exam-q" data-locked-step="exam-{esc(q.id)}">
+        <div class="step-head">
+          <span class="step-n">{esc(q.id)}</span>
+          <h3>Question {esc(q.id)}</h3>
+          <span class="badge">{q.points} pt{'s' if q.points > 1 else ''}</span>
+        </div>
+        <p class="small kicker">{esc(q.skill)}</p>
+        <div class="question">{esc(q.text)}</div>
+        <div class="no-print" style="margin-top:.5rem">
+          <button class="btn btn-warm btn-answer" type="button">Voir le corrigé</button>
+        </div>
+        <div class="answer" data-locked="{locked}"></div>
+      </div>"""
+        )
+    sources = " · ".join(esc(s) for s in exam.sources)
+    return f"""
+  <section class="card">
+    <p class="kicker">Préparation au brevet</p>
+    <h2>Sujet type brevet</h2>
+    <p>
+      <span class="badge">{exam.duration} min</span>
+      <span class="badge">{exam.points_total} points</span>
+      <span class="badge">{len(exam.documents)} documents</span>
+      <span class="badge">{len(exam.questions)} questions</span>
+    </p>
+    <p>{esc(exam.contexte)}</p>
+    <div class="exam-rappel"><b>Consigne.</b> {esc(exam.rappel)}</div>
+    {docs_html}
+    <h3>Questions <span class="small">(difficulté croissante)</span></h3>
+    {''.join(questions)}
+    <p class="small"><i>Thème : {esc(exam.theme)}<br>Sources : {sources}</i></p>
+  </section>"""
+
+
 def render_activity(act: activities.Activity) -> str:
     figs = step_figures(act)
+    exam_html = render_exam(act)
     city_list = list(act.default_cities)
     if city_list:
         kind, payload = fig_situation(city_list)
@@ -789,6 +885,7 @@ def render_activity(act: activities.Activity) -> str:
         for v in act.variables
     )
     cities_badge = f'\n    <span class="badge">{esc(cities)}</span>' if cities else ""
+    exam_badge = '\n    <span class="badge badge-ok">sujet type brevet</span>' if act.exam else ""
     return f"""<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -809,6 +906,7 @@ def render_activity(act: activities.Activity) -> str:
   <p>
     <span class="badge">4 étapes</span>{cities_badge}
     <span class="badge">{esc(variables)}</span>
+    {exam_badge}
   </p>
   <section class="card">
     <h2>Objectif</h2>
@@ -828,6 +926,7 @@ def render_activity(act: activities.Activity) -> str:
     <div id="lock-out" class="small" style="margin-top:.4rem"></div>
     <p class="small" style="color:var(--muted)">Sans code, la fiche imprimée ou projetée reste sans corrigé.</p>
   </section>
+  {exam_html}
   {''.join(steps_html)}
   <section class="card">
     <h2>Données de l'activité</h2>
@@ -852,7 +951,7 @@ def render_index(acts: list[activities.Activity]) -> str:
         <p class="kicker">{esc(act.subject)} · {esc(act.levels)} · {esc(act.duration)}</p>
         <h2><a href="{act.key}.html">{esc(act.title)}</a></h2>
         <p>{esc(act.objective)}</p>
-        <p><span class="badge">4 étapes</span> <span class="badge">{esc(', '.join(act.default_cities))}</span></p>
+        <p><span class="badge">4 étapes</span> <span class="badge">{esc(', '.join(act.default_cities))}</span>{' <span class="badge badge-ok">sujet type brevet</span>' if act.exam else ''}</p>
       </section>"""
         )
     return f"""<!DOCTYPE html>

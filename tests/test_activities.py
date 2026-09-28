@@ -1,15 +1,18 @@
 """
-Vérifie deux choses sur les activités :
+Vérifie trois choses sur les activités :
 
 1. la structure attendue (4 étapes, corrigé, indice, minutes) ;
 2. la cohérence **chiffrée** des corrigés avec les données pré-calculées —
-   un corrigé qui contredit les CSV est pire qu'un corrigé absent.
+   un corrigé qui contredit les CSV est pire qu'un corrigé absent ;
+3. la charte de rédaction des 48 consignes et la qualité des sujets type
+   brevet (contexte, documents numérotés, verbes d'action, barème).
 """
 
 from __future__ import annotations
 
 import calendar
 import json
+import unicodedata
 from pathlib import Path
 
 import numpy as np
@@ -237,3 +240,137 @@ def test_elnino_values() -> None:
     anom25 = (serie.loc["2025"] - base[serie.loc["2025"].index.month].values).mean()
     anom26 = (serie.loc["2026"] - base[serie.loc["2026"].index.month].values).mean()
     assert anom25 < 0 < anom26  # 2025 froide, 2026 chaude
+
+
+# --------------------------------------------------------------------------- #
+# Charte de rédaction des 48 consignes
+# --------------------------------------------------------------------------- #
+
+INSTRUCTION_STEMS = (
+    "relev", "repèr", "reper", "lis", "calc", "compar", "expli", "rel", "préd",
+    "pred", "rédig", "redig", "concl", "décri", "decri", "identif", "localis",
+    "justif", "observ", "constat", "class", "range", "additionn", "suppos",
+    "suis", "choisis", "indiq", "donn", "note", "propose", "disting", "déterm",
+    "determin", "confront", "mesur", "affiche",
+)
+
+#: Ce qu'une consigne ne doit jamais livrer : la réponse attendue.
+FORBIDDEN_IN_INSTRUCTIONS = {
+    "ocean_continent": ("8,8", "17,9", "14,5"),
+    "cycle_eau": ("600", "280", "250 mm"),
+    "rechauffement": ("10,7", "12,2", "1,6 °C"),
+    "cartes_climatiques": ("26 °C", "+16", "1019"),
+    "vent_pression": ("1024", "996", "1019"),
+    "latitude": ("21,5", "4,3", "17 °C", "13,6"),
+    "avant_apres": ("10,5", "11,5", "+1 °C"),
+    "pluies_europe": ("≈ 5", "−63", "−22", "153 mm"),
+    "regimes_monde": ("1,7", "15,3", "19,7"),
+    "portrait_climat": ("820", "15,0", "47 mm", "181 mm"),
+    "vents_courants": ("15,8", "30,7", "16 °C"),
+    "elnino": ("3,0 °C", "−0,4", "+0,9"),
+}
+
+
+def _norm(word: str) -> str:
+    decomposed = unicodedata.normalize("NFKD", word.strip("«»\"' ").lower())
+    return "".join(c for c in decomposed if not unicodedata.combining(c))
+
+
+def test_every_instruction_starts_with_an_action_verb() -> None:
+    for act in ALL:
+        for step in act.steps:
+            first = _norm(step.instruction.split(" ")[0])
+            assert any(first.startswith(s) for s in INSTRUCTION_STEMS), (
+                f"{act.key} : la consigne commence par {first!r}"
+            )
+
+
+def test_one_question_at_most_per_step() -> None:
+    for act in ALL:
+        for step in act.steps:
+            assert step.instruction.count("?") <= 1, f"{act.key} : {step.instruction}"
+
+
+def test_instructions_do_not_leak_the_answer() -> None:
+    for key, forbidden in FORBIDDEN_IN_INSTRUCTIONS.items():
+        act = activities.get(key)
+        text = " ".join(s.instruction for s in act.steps)
+        for value in forbidden:
+            assert value not in text, f"{key} : la consigne annonce {value!r}"
+
+
+# --------------------------------------------------------------------------- #
+# Sujets type brevet (rechauffement et elnino)
+# --------------------------------------------------------------------------- #
+
+
+def test_exam_only_where_planned() -> None:
+    assert [a.key for a in ALL if a.exam is not None] == ["rechauffement", "elnino"]
+
+
+def test_exam_passes_the_quality_gate() -> None:
+    for act in ALL:
+        if act.exam is None:
+            continue
+        assert activities.validate_exam(act.exam) == [], act.key
+
+
+def test_exam_answers_hidden_without_code() -> None:
+    hidden = {d["key"]: d for d in activities.list_activities(with_answers=False)}
+    shown = {d["key"]: d for d in activities.list_activities(with_answers=True)}
+    for key in ("rechauffement", "elnino"):
+        hidden_q = hidden[key]["exam"]["questions"][0]
+        shown_q = shown[key]["exam"]["questions"][0]
+        assert "expected" not in hidden_q and "attendu" not in hidden_q
+        assert "expected" in shown_q and "attendu" in shown_q
+        assert hidden[key]["exam"]["questions"][0].get("points") is not None
+        assert shown_q["points"] >= 1
+        total = sum(q["points"] for q in shown[key]["exam"]["questions"])
+        assert shown[key]["exam"]["points"] == total
+
+
+def test_exam_documents_are_renderable() -> None:
+    root = Path(__file__).resolve().parent.parent
+    for act in ALL:
+        if act.exam is None:
+            continue
+        for doc in act.exam.documents:
+            assert doc.chart in {"annual", "anomalies", "figure", "table", "none"}
+            if doc.chart == "figure":
+                assert (root / "public" / "assets" / "figures" / doc.file).exists(), doc.file
+            if doc.chart == "table":
+                assert len(doc.table) >= 2
+                assert len({len(row) for row in doc.table}) == 1
+
+
+def test_rechauffement_exam_table_matches_data(temp: pd.DataFrame) -> None:
+    doc = next(d for d in activities.get("rechauffement").exam.documents if d.chart == "table")
+    annual = temp["Paris"].resample("YE").mean()
+    annual.index = annual.index.year
+    for label, value in doc.table[1:]:
+        start, end = (int(x) for x in label.split("-"))
+        quoted = f"{annual.loc[start:end].mean():.1f}".replace(".", ",")
+        assert value == f"{quoted} °C", f"{label} : {value} ≠ {quoted} °C"
+    answers = " ".join(q.expected for q in activities.get("rechauffement").exam.questions)
+    assert "10,5 °C" in answers and "11,5 °C" in answers  # normales comparées
+
+
+def _scalar(value) -> float:
+    """Valeur unique, qu'elle soit un scalaire ou une Series d'un élément."""
+    return float(value.iloc[0]) if hasattr(value, "iloc") else float(value)
+
+
+def test_elnino_exam_table_matches_data() -> None:
+    doc = next(d for d in activities.get("elnino").exam.documents if d.chart == "table")
+    table = {label: value for label, value in doc.table[1:]}
+    serie = _nino_frame().iloc[:, 0].sort_index()
+    base = serie.loc["1991":"2020"].groupby(serie.loc["1991":"2020"].index.month).mean()
+    assert table["Août 2025"] == f"{_scalar(serie.loc['2025-08']):.1f}".replace(".", ",") + " °C"
+    assert table["Août 2026"] == f"{_scalar(serie.loc['2026-08']):.1f}".replace(".", ",") + " °C"
+    assert table["Normale de août 1991-2020"] == f"{_scalar(base[8]):.1f}".replace(".", ",") + " °C"
+    djf = serie.loc["2023-12":"2024-02"]
+    anom = float((djf - base[djf.index.month].values).mean())
+    assert table["Anomalie moyenne de l'hiver 2023-2024"] == f"+{anom:.1f}".replace(".", ",") + " °C"
+    answers = " ".join(q.expected for q in activities.get("elnino").exam.questions)
+    assert "3,0 °C" in answers  # écart d'un août à l'autre
+    assert "+2,6" in answers  # anomalie d'août 2026 (ou +2,7 selon l'arrondi)
