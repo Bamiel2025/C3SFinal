@@ -214,16 +214,20 @@ def _explain(message: str) -> str:
             "Jeton refusé par le CDS (401). Vérifiez qu'il s'agit bien du jeton "
             "d'accès personnel du profil CDS, et non d'un Client ID / Client secret."
         )
+    # AVANT le test « 403 » ci-dessous : un dépassement de coût est aussi un
+    # 403 (« cost limits exceeded / your request is too large »), mais il n'a
+    # rien à voir avec les conditions d'utilisation.
+    if "too large" in lowered or "cost limit" in lowered or "quota" in lowered:
+        return (
+            "Requête trop volumineuse pour le CDS (limite de coût, 403) : "
+            "réduisez la période demandée (moins d'années ou de mois) ou "
+            "l'extension géographique, puis relancez."
+        )
     if "licen" in lowered or "403" in lowered:
         return (
             "Conditions d'utilisation non acceptées (403). Ouvrez la page du jeu de "
             "données sur cds.climate.copernicus.eu et cliquez sur « Accept » en bas "
             "du formulaire."
-        )
-    if "cost limit" in lowered or "quota" in lowered:
-        return (
-            "Quota du CDS dépassé pour cette requête : réduisez la période ou "
-            "l'étendue géographique, puis réessayez plus tard."
         )
     if "timeout" in lowered or "timed out" in lowered:
         return "Le CDS n'a pas répondu à temps. Réessayez dans quelques minutes."

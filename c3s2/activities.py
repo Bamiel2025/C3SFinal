@@ -131,23 +131,23 @@ OCEAN_CONTINENT = Activity(
         Step(
             title="Mesurer l'hiver",
             instruction=(
-                "Quelle est la température moyenne du mois le plus froid à Brest "
-                "et à Strasbourg ?"
+                "Lis la température moyenne du mois le plus froid à Brest puis "
+                "à Strasbourg : quelles valeurs obtiens-tu ?"
             ),
             expected=(
                 "Brest : 7,9 °C en février, son mois le plus froid. Strasbourg : "
                 "2,4 °C en janvier. L'écart hivernal n'est donc que de 5,5 °C alors "
                 "que les deux villes sont à la même latitude."
             ),
-            hint="Cherchez le point le plus bas de chaque courbe, puis lisez sa valeur.",
+            hint="Le mois le plus froid est celui dont la valeur est la plus basse ; lis ensuite sa valeur sur l'axe.",
             chart="climato",
             minutes=5,
         ),
         Step(
             title="Calculer l'amplitude",
             instruction=(
-                "De combien de degrés la température monte-t-elle, à chaque ville, "
-                "entre son mois le plus froid et son mois le plus chaud ?"
+                "Calcule l'amplitude thermique annuelle de chaque ville (mois le "
+                "plus chaud moins mois le plus froid)."
             ),
             expected=(
                 "Brest : 8,8 °C (de 7,9 °C en février à 16,7 °C en août). "
@@ -179,8 +179,9 @@ OCEAN_CONTINENT = Activity(
         Step(
             title="Prévoir puis vérifier",
             instruction=(
-                "Quelle amplitude thermique annuelle prédis-tu pour Marseille, "
-                "ville méditerranéenne ?"
+                "Prédis l'amplitude thermique annuelle de Marseille, ville "
+                "méditerranéenne, puis vérifie-la : se classe-t-elle entre "
+                "Brest et Strasbourg ?"
             ),
             expected=(
                 "Une amplitude de l'ordre de 14 à 15 °C, soit bien plus qu'à Brest : "
@@ -235,7 +236,8 @@ CYCLE_EAU = Activity(
         Step(
             title="Repérer le minimum",
             instruction=(
-                "Dans quel mois Marseille reçoit-elle le moins de précipitations ?"
+                "Quel est le cumul mensuel le plus faible de l'année à Marseille, "
+                "et en quel mois tombe-t-il ?"
             ),
             expected=(
                 "En juillet : environ 10 mm seulement, ce qui correspond à une "
@@ -248,7 +250,9 @@ CYCLE_EAU = Activity(
         Step(
             title="Confronter chaleur et pluie",
             instruction=(
-                "Le mois le plus chaud de Marseille est-il aussi le plus humide ?"
+                "Compare, pour juillet et août à Marseille, la température moyenne "
+                "et le cumul de pluie : le mois le plus chaud est-il aussi le plus "
+                "humide ?"
             ),
             expected=(
                 "Non : juillet-août sont à la fois les mois les plus chauds "
@@ -262,8 +266,8 @@ CYCLE_EAU = Activity(
         Step(
             title="Comparer les totaux",
             instruction=(
-                "Quelle ville, Marseille ou Dakar, reçoit le plus d'eau sur une "
-                "année entière ?"
+                "Additionne les douze cumuls mensuels de chaque ville : laquelle "
+                "reçoit le plus d'eau en un an ?"
             ),
             expected=(
                 "Marseille : environ 600 mm par an, contre seulement 280 mm à "
@@ -272,16 +276,16 @@ CYCLE_EAU = Activity(
                 "Marseille étale sa pluie sur l'automne et l'hiver (octobre à "
                 "décembre : 240 mm) et reste sèche en été."
             ),
-            hint="Additionnez les douze cumuls mensuels : c'est le cumul annuel.",
+            hint="Cumul annuel = somme des douze cumuls mensuels.",
             chart="ombro",
             minutes=6,
         ),
         Step(
             title="Expliquer la saison des pluies",
             instruction=(
-                "Pourquoi les pluies de Dakar tombent-elles surtout pendant "
-                "l'été boréal (juillet-septembre), alors que Marseille reste "
-                "sèche à la même période ?"
+                "Pourquoi Dakar reçoit-elle 250 mm en juillet-septembre pendant "
+                "que Marseille reste sèche, alors que les deux villes ont un été "
+                "chaud ?"
             ),
             expected=(
                 "En juillet-septembre, l'été boréal réchauffe l'Atlantique "
@@ -340,8 +344,8 @@ RECHAUFFEMENT = Activity(
         Step(
             title="Calculer la hausse observée",
             instruction=(
-                "De combien la température moyenne annuelle de Paris a-t-elle "
-                "augmenté entre le début et la fin de la période affichée ?"
+                "Calcule l'écart entre la moyenne annuelle des dix premières "
+                "années (1940-1949) et celle des dix dernières (2015-2024) à Paris."
             ),
             expected=(
                 "Les dix premières années (1940-1949) donnent 10,7 °C de moyenne "
@@ -357,8 +361,8 @@ RECHAUFFEMENT = Activity(
         Step(
             title="Quantifier par décennie",
             instruction=(
-                "De combien la température augmente-t-elle, en moyenne, chaque "
-                "décennie à Paris ?"
+                "Lis la valeur de la tendance affichée : de combien la "
+                "température parisienne augmente-t-elle par décennie ?"
             ),
             expected=(
                 "Environ +0,2 °C par décennie sur 1940-2024 (la régression "
@@ -374,8 +378,8 @@ RECHAUFFEMENT = Activity(
         Step(
             title="Écarter un contre-exemple",
             instruction=(
-                "Pourquoi une seule année froide suffit-elle à convaincre certains "
-                "que « le climat ne change pas » ?"
+                "Pourquoi une seule année froide ne suffit-elle pas à contredire "
+                "la tendance mesurée sur 85 ans ?"
             ),
             expected=(
                 "Parce qu'on compare deux années isolées au lieu de comparer des "
@@ -383,15 +387,15 @@ RECHAUFFEMENT = Activity(
                 "(environ ±0,5 à 1 °C) est du même ordre que la tendance sur une "
                 "seule décennie. Seule une moyenne longue fait apparaître la tendance."
             ),
-            hint="Comparez l'écart d'une année à l'autre avec la tendance sur dix ans.",
+            hint="Compare l'écart entre deux années voisines et la hausse sur dix ans.",
             chart="anomalies",
             minutes=8,
         ),
         Step(
             title="Rédiger la conclusion",
             instruction=(
-                "Écris une phrase qui dit ce que ces données permettent d'affirmer "
-                "sur le climat de Paris."
+                "Rédige une phrase citant la période, la grandeur mesurée et la "
+                "valeur du réchauffement parisien."
             ),
             expected=(
                 "Exemple attendu : « Sur la période 1940-2024, la température "
@@ -447,8 +451,8 @@ CARTES = Activity(
         Step(
             title="Lire la normale de janvier",
             instruction=(
-                "Quelle région européenne est la plus froide en janvier selon la "
-                "carte des températures ?"
+                "Localise la région la plus froide d'Europe en janvier et lis sa "
+                "gamme de températures."
             ),
             expected=(
                 "Le nord-est de l'Europe (Russie occidentale, Finlande, Scandinavie "
@@ -463,8 +467,8 @@ CARTES = Activity(
         Step(
             title="Comparer janvier et juillet",
             instruction=(
-                "Que se passe-t-il pour la Méditerranée entre la carte de janvier "
-                "et celle de juillet ?"
+                "Lis la température moyenne du bassin méditerranéen en janvier "
+                "puis en juillet : de combien augmente-t-elle ?"
             ),
             expected=(
                 "La Méditerranée passe d'un hiver doux (moyennes de l'ordre de "
@@ -481,8 +485,8 @@ CARTES = Activity(
         Step(
             title="Choisir la bonne échelle",
             instruction=(
-                "Une carte qui utilise deux degrés de couleur par cran rend-elle "
-                "mieux les contrastes qu'une carte à dix crans ?"
+                "Un pas de couleur de 2 °C rend-il mieux les contrastes qu'un pas "
+                "de 10 °C ? Justifie."
             ),
             expected=(
                 "Non : un pas trop gros (2 °C) masque les variations locales ; un "
@@ -497,8 +501,8 @@ CARTES = Activity(
         Step(
             title="Climat ou météo ?",
             instruction=(
-                "Une carte de températures de trois mois suffit-elle à décrire le "
-                "climat d'un pays ?"
+                "Une carte de trois mois suffit-elle à décrire le climat d'un "
+                "pays ? Justifie avec la définition d'une normale climatique."
             ),
             expected=(
                 "Non : le climat se décrit sur au moins trente ans (normale OMM "
@@ -552,8 +556,8 @@ VENT_PRESSION = Activity(
         Step(
             title="Repérer la valeur de référence",
             instruction=(
-                "Quelle est la valeur habituelle de la pression atmosphérique au "
-                "niveau de la mer ?"
+                "Lis la pression au niveau de la mer sur l'Europe occidentale : "
+                "autour de quelle valeur de référence oscille-t-elle ?"
             ),
             expected=(
                 "Environ 1013 hPa. C'est la valeur de référence autour de laquelle "
@@ -567,8 +571,8 @@ VENT_PRESSION = Activity(
         Step(
             title="Localiser les systèmes",
             instruction=(
-                "Où se trouvent les hautes pressions sur la carte de janvier, et "
-                "où se trouvent les basses pressions ?"
+                "Localise le maximum et le minimum de pression de la carte et lis "
+                "leurs valeurs : où se trouvent les hautes et les basses pressions ?"
             ),
             expected=(
                 "Les hautes pressions occupent l'Atlantique subtropical et "
@@ -585,8 +589,8 @@ VENT_PRESSION = Activity(
         Step(
             title="Relier pression et vent",
             instruction=(
-                "Dans quelle direction l'air se déplace-t-il spontanément entre "
-                "une zone de hautes pressions et une zone de basses pressions ?"
+                "Dans quel sens l'air se déplace-t-il entre une zone de hautes "
+                "pressions et une zone de basses pressions ?"
             ),
             expected=(
                 "Des hautes vers les basses : c'est le gradient de pression qui "
@@ -600,8 +604,8 @@ VENT_PRESSION = Activity(
         Step(
             title="Vérifier avec les flèches",
             instruction=(
-                "Les flèches de vent de la carte suivent-elles la direction "
-                "prédite à l'étape précédente ?"
+                "Suis une flèche de vent placée près d'une isobare : va-t-elle "
+                "directement des hautes vers les basses pressions ?"
             ),
             expected=(
                 "Oui, à condition de tenir compte de la déviation : les flèches ne "
@@ -655,8 +659,8 @@ LATITUDE = Activity(
         Step(
             title="Prédire sans regarder",
             instruction=(
-                "Classe ces quatre villes de la plus chaude à la plus froide pour "
-                "le mois de janvier, sans consulter les données."
+                "Classe les quatre villes de la plus chaude à la plus froide pour "
+                "janvier, en utilisant uniquement leurs latitudes."
             ),
             expected=(
                 "Classement attendu : Dakar > Paris > Reykjavik > Longyearbyen. "
@@ -670,8 +674,8 @@ LATITUDE = Activity(
         Step(
             title="Vérifier avec les mesures",
             instruction=(
-                "Quelle ville est la plus chaude en janvier, et de combien "
-                "dépasse-t-elle Paris ?"
+                "Lis la température de janvier de Dakar et de Paris : quel est "
+                "l'écart entre les deux ?"
             ),
             expected=(
                 "Dakar, avec 21,5 °C de moyenne en janvier, contre 4,3 °C à "
@@ -685,8 +689,8 @@ LATITUDE = Activity(
         Step(
             title="Identifier la surprise",
             instruction=(
-                "Pourquoi Reykjavik est-elle moins froide que ne le laissait "
-                "prévoir sa latitude ?"
+                "Compare janvier à Reykjavik (−0,3 °C) et à Longyearbyen "
+                "(−13,6 °C) : l'écart correspond-il à leurs latitudes ?"
             ),
             expected=(
                 "Reykjavik (64° N) affiche −0,3 °C en janvier, alors que la "
@@ -758,8 +762,8 @@ AVANT_APRES = Activity(
         Step(
             title="Choisir les périodes",
             instruction=(
-                "Quelles deux périodes de trente ans faut-il comparer pour mesurer "
-                "le changement depuis le début du XXe siècle ?"
+                "Quelles deux périodes de trente ans peux-tu comparer avec les "
+                "données disponibles, qui commencent en 1940 ?"
             ),
             expected=(
                 "Par exemple 1901-1930 (ou 1941-1970, première période "
@@ -773,8 +777,8 @@ AVANT_APRES = Activity(
         Step(
             title="Mesurer l'écart moyen",
             instruction=(
-                "De combien la température moyenne annuelle de Paris diffère-t-elle "
-                "entre les deux périodes ?"
+                "Calcule l'écart entre la moyenne 1941-1970 et la moyenne "
+                "1991-2020 à Paris."
             ),
             expected=(
                 "Pour Paris : 10,5 °C en 1941-1970 contre 11,5 °C en 1991-2020, "
@@ -789,8 +793,8 @@ AVANT_APRES = Activity(
         Step(
             title="Regarder le détail mensuel",
             instruction=(
-                "L'écart entre les deux périodes est-il le même en janvier et en "
-                "juillet ?"
+                "L'écart entre les deux périodes est-il le même en janvier, en "
+                "juillet et en septembre ?"
             ),
             expected=(
                 "Non : à Paris, l'écart atteint +1,8 °C en janvier mais seulement "
@@ -806,8 +810,8 @@ AVANT_APRES = Activity(
         Step(
             title="Conclure",
             instruction=(
-                "Peut-on affirmer, à partir de ces deux périodes, que le climat de "
-                "Paris a changé ?"
+                "Rédige une conclusion qui cite les deux périodes comparées et la "
+                "valeur de l'écart moyen."
             ),
             expected=(
                 "Oui : l'écart est positif sur les douze mois (de +0,0 à +1,8 °C) "
@@ -927,6 +931,327 @@ CANICULE = Activity(
 )
 
 
+# --------------------------------------------------------------------------- #
+# 9. Pluies d'Europe (cartes de précipitations)
+# --------------------------------------------------------------------------- #
+
+PLUIES_EUROPE = Activity(
+    key="pluies_europe",
+    title="Carte de précipitations : où pleut-il en hiver et en été ?",
+    levels="4e · 3e",
+    duration="55 min",
+    subject="Géographie · SVT",
+    objective=(
+        "Lire un cumul mensuel sur une carte, comparer janvier et juillet, puis "
+        "relier les contrastes au relief et à la circulation atmosphérique."
+    ),
+    skills=(
+        "Lire un cumul mensuel sur une carte et sa légende",
+        "Comparer deux cartes saisonnières avec des valeurs",
+        "Relier pluie, relief et flux d'ouest",
+    ),
+    introduction=(
+        "En janvier, la côte ouest de la Norvège reçoit près de 300 mm pendant "
+        "que la Sicile en reçoit 57. En juillet, l'Andalousie tombe à 4 mm "
+        "pendant que les Alpes dépassent 150 mm. Deux cartes suffisent à "
+        "raconter l'Europe des pluies."
+    ),
+    default_cities=("Brest", "Marseille"),
+    variables=("total_precipitation",),
+    chart="map",
+    keywords=("précipitations", "carte", "relief", "saison"),
+    difficulty=2,
+    teacher_tip=(
+        "Faire lire des valeurs avant toute interprétation : l'erreur classique "
+        "est de commenter un « beau temps » au lieu de cumuls en mm/mois. Le "
+        "cas des Alpes, plus arrosées en été qu'en hiver, surprend toujours."
+    ),
+    steps=(
+        Step(
+            title="Décrire janvier",
+            instruction=(
+                "Lis le cumul de janvier à Marseille (environ 57 mm) et sur la "
+                "côte ouest de la Norvège (environ 293 mm) : quel est le rapport "
+                "entre les deux ?"
+            ),
+            expected=(
+                "293 ÷ 57 ≈ 5 : la côte norvégienne reçoit cinq fois plus d'eau "
+                "que Marseille en janvier. Le nord-ouest atlantique est la "
+                "région la plus arrosée d'Europe en hiver, exposée de plein "
+                "fouet aux flux d'ouest."
+            ),
+            hint="Rapport = grande valeur divisée par petite valeur.",
+            chart="map",
+            minutes=5,
+        ),
+        Step(
+            title="Comparer les saisons",
+            instruction=(
+                "Calcule la baisse des pluies entre janvier et juillet à "
+                "Marseille (57 vers 21 mm) et en Écosse (120 vers 94 mm) : où la "
+                "baisse est-elle la plus forte, en mm et en proportion ?"
+            ),
+            expected=(
+                "Marseille : −36 mm, soit −63 %. Écosse : −26 mm, soit −22 %. "
+                "La baisse est donc plus forte à Marseille dans l'absolu comme "
+                "en proportion : le sud s'assèche franchement l'été pendant que "
+                "le nord-ouest reste arrosé toute l'année."
+            ),
+            hint="Baisse en mm = janvier − juillet ; en proportion = baisse ÷ janvier.",
+            chart="map",
+            minutes=7,
+        ),
+        Step(
+            title="Mettre en relation avec le relief",
+            instruction=(
+                "Confronte le juillet des Alpes (153 mm) à celui de Marseille "
+                "(21 mm) et de l'Andalousie (4 mm) : que se passe-t-il en "
+                "montagne ?"
+            ),
+            expected=(
+                "Les Alpes sont plus arrosées en juillet (153 mm) qu'en janvier "
+                "(139 mm) : c'est l'inverse du reste du sud. L'air chaud des "
+                "basses couches est forcé de s'élever sur le relief, il se "
+                "refroidit et se condense — orages et averses d'été. Le relief "
+                "fabrique de la pluie là où la plaine reste sèche."
+            ),
+            hint="Compare aussi janvier et juillet sur les Alpes (139 contre 153 mm).",
+            chart="map",
+            minutes=7,
+        ),
+        Step(
+            title="Expliquer le contraste nord-sud",
+            instruction=(
+                "Pourquoi les pluies d'été s'effondrent-elles au sud (Sicile "
+                "5 mm, Andalousie 4 mm) mais pas au nord-ouest (Écosse 94 mm) ?"
+            ),
+            expected=(
+                "Au nord-ouest, les flux d'ouest chargés d'humidité balaient les "
+                "reliefs toute l'année : l'Écosse garde 94 mm en juillet et la "
+                "pluie ne s'arrête jamais vraiment. Au sud, l'été installe une "
+                "atmosphère stable et subsidente (anticyclone) : la Sicile tombe "
+                "à 5 mm et l'Andalousie à 4 mm, car l'air ne s'élève pas et ne se "
+                "condense donc pas. Même saison, trois régimes : océanique, "
+                "méditerranéen, montagnard."
+            ),
+            hint="Relie « flux d'ouest », « relief » et « air stable » aux trois régions.",
+            chart="map",
+            minutes=8,
+        ),
+    ),
+)
+
+
+# --------------------------------------------------------------------------- #
+# 10. Régimes du monde (équatorial, tempéré, polaire)
+# --------------------------------------------------------------------------- #
+
+REGIMES_MONDE = Activity(
+    key="regimes_monde",
+    title="Trois villes, trois régimes : Singapour, Paris, Longyearbyen",
+    levels="5e · 4e",
+    duration="55 min",
+    subject="SVT · Géographie",
+    objective=(
+        "Comparer trois normales annuelles (1°, 49° et 78° N) et relier "
+        "amplitude et moyenne annuelles à la latitude."
+    ),
+    skills=(
+        "Lire une normale mensuelle pour trois villes",
+        "Calculer une amplitude et classer",
+        "Relier amplitude, latitude et cumul de pluie",
+    ),
+    introduction=(
+        "Singapour (1° N), Paris (49° N), Longyearbyen (78° N) : trois latitudes, "
+        "trois climats. Les douze moyennes mensuelles de chaque ville racontent "
+        "leur année — à vous de les chiffrer."
+    ),
+    default_cities=("Singapore", "Paris", "Longyearbyen"),
+    variables=("2m_temperature",),
+    chart="climato",
+    keywords=("régime", "amplitude", "latitude", "équateur"),
+    difficulty=1,
+    teacher_tip=(
+        "Laisser les élèves manipuler les trois nombres (janvier, juillet, "
+        "amplitude) avant toute explication : le tableau comparatif est le "
+        "cœur de la séance. Singapour surprend toujours par sa régularité."
+    ),
+    steps=(
+        Step(
+            title="Décrire l'année",
+            instruction=(
+                "Lis la température de janvier et de juillet dans chaque ville : "
+                "quelles sont les six valeurs ?"
+            ),
+            expected=(
+                "Singapour : 26,1 °C en janvier et 27,5 °C en juillet. Paris : "
+                "4,3 °C et 19,6 °C. Longyearbyen : −13,6 °C et 5,4 °C. "
+                "Première leçon : à l'équateur, janvier et juillet se ressemblent."
+            ),
+            hint="Janvier : mois 1 ; juillet : mois 7. Lis chaque valeur sur l'axe.",
+            chart="climato",
+            minutes=5,
+        ),
+        Step(
+            title="Calculer et classer",
+            instruction=(
+                "Calcule l'amplitude annuelle des trois villes et classe-les de "
+                "la plus stable à la plus contrastée."
+            ),
+            expected=(
+                "Singapour : 1,7 °C (27,9 − 26,1). Paris : 15,3 °C (19,6 − 4,3). "
+                "Longyearbyen : 19,7 °C (5,4 − (−14,3)). Classement : Singapour "
+                "< Paris < Longyearbyen. L'amplitude est multipliée par plus de "
+                "dix entre l'équateur et le cercle polaire."
+            ),
+            hint="Amplitude = mois le plus chaud − mois le plus froid.",
+            chart="climato",
+            minutes=6,
+        ),
+        Step(
+            title="Mettre en relation",
+            instruction=(
+                "Relie chaque amplitude à la latitude de sa ville (1°, 49°, "
+                "78° N) et aux cumuls annuels de pluie (Singapour 2390 mm, Paris "
+                "732 mm, Longyearbyen 541 mm) : que constates-tu ?"
+            ),
+            expected=(
+                "L'amplitude croît avec la latitude pendant que la moyenne "
+                "annuelle chute (27,1 °C, 11,5 °C, −6,0 °C). À Singapour, chaleur "
+                "constante et pluie abondante toute l'année (jamais moins de "
+                "96 mm par mois) : le régime équatorial. À Longyearbyen, hiver "
+                "long et sec, été bref et frais : le régime polaire."
+            ),
+            hint="Range les trois villes par latitude croissante et regarde les deux colonnes.",
+            chart="climato",
+            minutes=7,
+        ),
+        Step(
+            title="Expliquer",
+            instruction=(
+                "Pourquoi la température de Singapour varie-t-elle de moins de "
+                "2 °C dans l'année quand celle de Longyearbyen varie de près de "
+                "20 °C ?"
+            ),
+            expected=(
+                "À l'équateur, le Soleil culmine toujours haut à midi, en "
+                "janvier comme en juillet : l'énergie reçue ne varie presque "
+                "pas. À 78° N, l'obliquité fait tout basculer : nuit polaire "
+                "l'hiver (aucune énergie), jour polaire l'été sous un soleil "
+                "rasant. Même Soleil, deux géométries."
+            ),
+            hint="Pense à la hauteur du Soleil à midi en janvier et en juillet dans chaque ville.",
+            chart="climato",
+            minutes=8,
+        ),
+    ),
+)
+
+
+# --------------------------------------------------------------------------- #
+# 11. Portrait climatique (synthèse sur une ville au choix)
+# --------------------------------------------------------------------------- #
+
+PORTRAIT_CLIMAT = Activity(
+    key="portrait_climat",
+    title="Portrait climatique : décris le climat de Bordeaux",
+    levels="4e · 3e",
+    duration="55 min",
+    subject="SVT · Géographie · Français",
+    objective=(
+        "Construire le portrait chiffré complet d'une ville (froid, chaud, "
+        "amplitude, pluie) et le résumer en une phrase argumentée."
+    ),
+    skills=(
+        "Extraire quatre nombres d'une normale mensuelle",
+        "Comparer deux villes avec les mêmes indicateurs",
+        "Rédiger une synthèse chiffrée",
+    ),
+    introduction=(
+        "Bordeaux : océanique ou méditerranéen ? Les douze moyennes de "
+        "température et les douze cumuls de pluie tranchent. À la fin, tu "
+        "rédigeras son portrait en une seule phrase — avec quatre nombres."
+    ),
+    default_cities=("Bordeaux",),
+    variables=("2m_temperature", "total_precipitation"),
+    chart="climato",
+    keywords=("portrait", "synthèse", "régime", "Bordeaux"),
+    difficulty=2,
+    teacher_tip=(
+        "Exiger les quatre nombres dans la phrase finale : c'est le critère "
+        "qui distingue un portrait scientifique d'une impression. Faire "
+        "comparer avec la ville d'origine des élèves quand c'est possible."
+    ),
+    steps=(
+        Step(
+            title="Décrire les températures",
+            instruction=(
+                "Lis le mois le plus froid et le mois le plus chaud de Bordeaux "
+                "ainsi que leurs températures."
+            ),
+            expected=(
+                "Janvier : 6,7 °C, mois le plus froid. Juillet et août : "
+                "21,6 °C, mois les plus chauds. Un hiver doux et un été chaud, "
+                "sans excès dans les deux sens."
+            ),
+            hint="Le mois le plus froid est celui dont la valeur est la plus basse.",
+            chart="climato",
+            minutes=5,
+        ),
+        Step(
+            title="Chiffrer l'eau",
+            instruction=(
+                "Calcule le cumul annuel de pluie de Bordeaux et repère son "
+                "mois le plus sec."
+            ),
+            expected=(
+                "Environ 820 mm par an, répartis sur les douze mois (de 53 à "
+                "84 mm par mois). Le mois le plus sec est juillet avec 53 mm : "
+                "il n'y a pas de vraie saison sèche, seulement un creux estival."
+            ),
+            hint="Cumul annuel = somme des douze cumuls mensuels.",
+            chart="ombro",
+            minutes=6,
+        ),
+        Step(
+            title="Comparer à un témoin",
+            instruction=(
+                "Compare l'amplitude et la pluie d'été de Bordeaux (15,0 °C ; "
+                "181 mm en juin-août) à celles de Marseille (14,5 °C ; 47 mm) : "
+                "quelle ville a l'été le plus sec ?"
+            ),
+            expected=(
+                "Marseille, et de loin : 47 mm en trois mois d'été contre "
+                "181 mm à Bordeaux, avec un juillet à 10 mm contre 53 mm. Les "
+                "amplitudes sont pourtant presque identiques (14,5 contre "
+                "15,0 °C). Même chaleur estivale, deux régimes de pluie : "
+                "Bordeaux reste océanique, Marseille est méditerranéenne."
+            ),
+            hint="Additionne juin, juillet et août de chaque ville.",
+            chart="ombro",
+            minutes=7,
+        ),
+        Step(
+            title="Rédiger le portrait",
+            instruction=(
+                "Rédige en une phrase le portrait climatique de Bordeaux en "
+                "citant quatre nombres : froid, chaud, amplitude, pluie annuelle."
+            ),
+            expected=(
+                "Exemple attendu : « À Bordeaux, l'hiver descend à 6,7 °C en "
+                "janvier et l'été monte à 21,6 °C, soit une amplitude de "
+                "15,0 °C, avec 820 mm de pluie répartis sur l'année : un climat "
+                "océanique à été chaud. » La phrase doit contenir les quatre "
+                "nombres et le nom du régime."
+            ),
+            hint="Une phrase scientifique cite toujours des valeurs, pas des impressions.",
+            chart="climato",
+            minutes=8,
+        ),
+    ),
+)
+
+
 ACTIVITIES: list[Activity] = [
     OCEAN_CONTINENT,
     CYCLE_EAU,
@@ -935,8 +1260,14 @@ ACTIVITIES: list[Activity] = [
     VENT_PRESSION,
     LATITUDE,
     AVANT_APRES,
-    CANICULE,
+    PLUIES_EUROPE,
+    REGIMES_MONDE,
+    PORTRAIT_CLIMAT,
 ]
+# NOTE : l'activité CANICULE (jours de chaleur, données journalières) est
+# temporairement retirée du catalogue en attendant la préparation des données
+# journalières (`python scripts/prepare_data.py heat --cities Marseille,Paris`).
+# Son code est conservé ci-dessous pour réactivation.
 
 _BY_KEY = {a.key: a for a in ACTIVITIES}
 

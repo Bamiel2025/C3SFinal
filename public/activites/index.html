@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fiches d'activités autonomes — C3S²</title>
+<style>
+:root{
+  --ink:#1e293b; --muted:#64748b; --line:#e2e8f0; --card:#ffffff; --bg:#f1f5f9;
+  --navy:#1f3a5f; --accent:#e07a5f; --ok:#15803d; --okbg:#dcfce7; --amberbg:#fef3c7;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,"DejaVu Sans",sans-serif;line-height:1.55}
+.topbar{background:var(--navy);color:#fff;padding:.55rem 1rem;display:flex;gap:1rem;align-items:center}
+.topbar a{color:#fff;text-decoration:none;font-weight:600}
+.topbar .brand{display:flex;align-items:center;gap:.5rem}
+.badge{display:inline-block;background:#eef2ff;border:1px solid var(--line);border-radius:999px;
+  padding:.05rem .6rem;font-size:.8rem;color:var(--navy);margin:.1rem .15rem .1rem 0}
+.wrap{max-width:1020px;margin:0 auto;padding:1.2rem 1rem 3rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1.1rem 1.2rem;margin:1rem 0}
+h1{font-size:1.7rem;margin:.2rem 0 .6rem;color:var(--navy)}
+h2{font-size:1.15rem;color:var(--navy);margin:.2rem 0 .5rem}
+.kicker{color:var(--accent);font-weight:700;letter-spacing:.06em;font-size:.8rem;text-transform:uppercase}
+.question{border-left:4px solid var(--accent);background:#fff7ed;border-radius:0 10px 10px 0;
+  padding:.7rem .9rem;font-weight:600;margin:.6rem 0}
+.hint{background:#f8fafc;border:1px dashed #94a3b8;border-radius:10px;padding:.55rem .8rem;margin:.5rem 0;font-size:.95rem}
+.hint b{color:var(--navy)}
+figure{margin:.8rem 0}
+figure svg, figure img{max-width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:10px}
+figcaption{font-size:.82rem;color:var(--muted);margin-top:.25rem}
+.step-head{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.step-n{background:var(--navy);color:#fff;font-weight:700;border-radius:10px;min-width:2rem;height:2rem;
+  display:inline-flex;align-items:center;justify-content:center}
+.teacher{background:#fffbeb;border:1px solid #f59e0b;border-radius:12px;padding:.8rem 1rem}
+input[type=password]{padding:.45rem .6rem;border:1px solid var(--line);border-radius:8px;max-width:220px}
+.btn{background:var(--navy);color:#fff;border:none;border-radius:9px;padding:.5rem 1rem;font-weight:600;cursor:pointer}
+.btn:hover{filter:brightness(1.12)}
+.btn-warm{background:var(--accent)}
+.answer{display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:.7rem .9rem;margin:.5rem 0}
+.answer.visible{display:block}
+.badge-ok{background:var(--okbg);color:var(--ok);border:1px solid #86efac}
+footer{color:var(--muted);font-size:.8rem;margin-top:2rem}
+.tip{background:var(--amberbg);border-left:4px solid #f59e0b;border-radius:0 10px 10px 0;padding:.6rem .9rem}
+@media print{
+  body{background:#fff}
+  .topbar,.no-print{display:none !important}
+  .wrap{max-width:none;padding:0}
+  .card{break-inside:avoid;border-color:#cbd5e1}
+  figure svg, figure img{-print-color-adjust:exact;print-color-adjust:exact}
+  .step{break-inside:avoid}
+  a{color:var(--ink);text-decoration:none}
+}
+</style>
+</head>
+<body>
+<header class="topbar no-print">
+  <span class="brand">C3S² · Climat en classe</span>
+  <span style="margin-left:auto;font-size:.85rem">10 fiches autonomes + versions PDF</span>
+</header>
+<main class="wrap">
+  <p class="kicker">Fiches pédagogiques autonomes</p>
+  <h1>10 activités prêtes à projeter et à imprimer</h1>
+  <p>Chaque fiche est un fichier unique (graphiques et cartes inclus) : elle fonctionne
+  sans connexion une fois téléchargée. Les corrigés se déverrouillent avec le code enseignant.
+  Les versions PDF (élève et corrigé) sont dans le dossier <code>pdf/</code>.</p>
+  
+      <section class="card">
+        <p class="kicker">SVT · Physique-chimie · Géographie · 5e · 4e · 55 min</p>
+        <h2><a href="ocean_continent.html">Océan ou continent : d&#x27;où vient l&#x27;amplitude thermique ?</a></h2>
+        <p>Relier l&#x27;amplitude thermique annuelle à la distance à la mer, à partir de températures réelles mesurées sur deux villes de même latitude.</p>
+        <p><span class="badge">4 étapes</span> <span class="badge">Brest, Strasbourg</span></p>
+      </section>
+      <section class="card">
+        <p class="kicker">SVT · Physique-chimie (changements d&#x27;état) · 5e · 4e · 55 min</p>
+        <h2><a href="cycle_eau.html">Cycle de l&#x27;eau : d&#x27;où viennent les précipitations ?</a></h2>
+        <p>Relier évaporation, condensation et précipitations aux cumuls mesurés, et distinguer un régime méditerranéen d&#x27;un régime équatorial de mousson.</p>
+        <p><span class="badge">4 étapes</span> <span class="badge">Marseille, Dakar</span></p>
+      </section>
+      <section class="card">
+        <p class="kicker">SVT · Mathématiques · 4e · 3e · 55 min</p>
+        <h2><a href="rechauffement.html">Mesurer le réchauffement climatique avec des données</a></h2>
+        <p>Quantifier la hausse des températures par décennie, à partir de moyennes annuelles et d&#x27;anomalies, puis formuler une conclusion prudente.</p>
+        <p><span class="badge">4 étapes</span> <span class="badge">Paris, Strasbourg</span></p>
+      </section>
+      <section class="card">
+        <p class="kicker">Géographie · SVT · 4e · 3e · 55 min</p>
+        <h2><a href="cartes_climatiques.html">Lire une carte climatique sans se tromper</a></h2>
+        <p>Lire une carte de températures ou de précipitations, choisir une échelle de couleurs honnête, et distinguer un climat d&#x27;une situation de météo.</p>
+        <p><span class="badge">4 étapes</span> <span class="badge">Paris</span></p>
+      </section>
+      <section class="card">
+        <p class="kicker">Physique-chimie · SVT · 3e · 4e · 55 min</p>
+        <h2><a href="vent_pression.html">Pression atmosphérique et direction du vent</a></h2>
+        <p>Relier les zones de hautes et de basses pressions à la circulation du vent, et comprendre pourquoi l&#x27;air se met en mouvement.</p>
+        <p><span class="badge">4 étapes</span> <span class="badge">Paris</span></p>
+      </section>
+      <section class="card">
+        <p class="kicker">Physique-chimie · SVT · Géographie · 4e · 3e · 55 min</p>
+        <h2><a href="latitude.html">Latitude et température : pourquoi fait-il froid aux pôles ?</a></h2>
+        <p>Relier la baisse des températures à la latitude en confrontant une prédiction écrite à des mesures réelles de quatre villes.</p>
+        <p><span class="badge">4 étapes</span> <span class="badge">Dakar, Paris, Reykjavik, Longyearbyen</span></p>
+      </section>
+      <section class="card">
+        <p class="kicker">Mathématiques · SVT · Géographie · 4e · 3e · 55 min</p>
+        <h2><a href="avant_apres.html">Comparer deux périodes : a-t-il vraiment changé ?</a></h2>
+        <p>Comparer deux périodes séparées de plusieurs décennies et interpréter la différence moyenne obtenue.</p>
+        <p><span class="badge">4 étapes</span> <span class="badge">Paris, Marseille</span></p>
+      </section>
+      <section class="card">
+        <p class="kicker">Géographie · SVT · 4e · 3e · 55 min</p>
+        <h2><a href="pluies_europe.html">Carte de précipitations : où pleut-il en hiver et en été ?</a></h2>
+        <p>Lire un cumul mensuel sur une carte, comparer janvier et juillet, puis relier les contrastes au relief et à la circulation atmosphérique.</p>
+        <p><span class="badge">4 étapes</span> <span class="badge">Brest, Marseille</span></p>
+      </section>
+      <section class="card">
+        <p class="kicker">SVT · Géographie · 5e · 4e · 55 min</p>
+        <h2><a href="regimes_monde.html">Trois villes, trois régimes : Singapour, Paris, Longyearbyen</a></h2>
+        <p>Comparer trois normales annuelles (1°, 49° et 78° N) et relier amplitude et moyenne annuelles à la latitude.</p>
+        <p><span class="badge">4 étapes</span> <span class="badge">Singapore, Paris, Longyearbyen</span></p>
+      </section>
+      <section class="card">
+        <p class="kicker">SVT · Géographie · Français · 4e · 3e · 55 min</p>
+        <h2><a href="portrait_climat.html">Portrait climatique : décris le climat de Bordeaux</a></h2>
+        <p>Construire le portrait chiffré complet d&#x27;une ville (froid, chaud, amplitude, pluie) et le résumer en une phrase argumentée.</p>
+        <p><span class="badge">4 étapes</span> <span class="badge">Bordeaux</span></p>
+      </section>
+  <footer>Generated using Copernicus Climate Change Service information 2024 (C3S/CAMS), with the appropriate credit.</footer>
+</main>
+</body>
+</html>

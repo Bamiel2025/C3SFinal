@@ -31,10 +31,15 @@ DAILY_VARIABLES = {
 }
 
 #: Tranche d'années demandée au CDS pour une requête journalière.
-CHUNK_YEARS = 25
+#: Le CDS refuse au-delà d'un certain volume (« cost limits exceeded ») :
+#: on démarre sur un bloc raisonnable et on divise automatiquement.
+CHUNK_YEARS = 6
 
-#: Sous-tranche minimale (si le CDS refuse le coût d'une requête).
-MIN_CHUNK_YEARS = 5
+#: Sous-tranche minimale (année pleine avant de couper sur les mois).
+MIN_CHUNK_YEARS = 1
+
+#: Mois demandés lorsqu'une année entière reste trop volumineuse.
+ALL_MONTHS = tuple(range(1, 13))
 
 _cache: dict[str, pd.DataFrame] = {}
 
@@ -68,13 +73,26 @@ def available() -> dict[str, list[str]]:
     return out
 
 
+def _is_cost_error(exc: BaseException) -> bool:
+    """Le CDS refuse une requête trop volumineuse (403 « too large »)."""
+    text = str(exc).lower()
+    return (
+        "too large" in text
+        or "cost limit" in text
+        or "quota" in text
+        or "trop volumineuse" in text  # message déjà traduit par cds._explain
+        or "limite de coût" in text
+    )
+
+
 def _fetch_daily(place: places.Place, kind: str, start: int, end: int) -> pd.Series:
     """
     Télécharge (ou lit du cache) les données journalières d'une ville.
 
-    La période est demandée d'un bloc ; si le CDS refuse (plafond de coût), le
-    bloc est scindé automatiquement jusqu'à `MIN_CHUNK_YEARS` années. Une
-    requête par année multiplierait inutilement le nombre d'appels.
+    La période est découpée en blocs de `CHUNK_YEARS` années. Si le CDS juge
+    un bloc trop volumineux (« cost limits exceeded »), celui-ci est divisé
+    par deux, puis par les mois si une année pleine reste trop lourde : on ne
+    multiplie les appels que lorsque le serveur l'exige réellement.
     """
     variable, statistic = DAILY_VARIABLES[kind]
     cfg = config.resolve_cds_config()
@@ -94,26 +112,50 @@ def _fetch_daily(place: places.Place, kind: str, start: int, end: int) -> pd.Ser
     begin = y0
     while begin <= y1:
         stop = min(begin + CHUNK_YEARS - 1, y1)
-        try:
-            chunks.append(_retrieve_chunk(cfg, dataset, variable, statistic, place, begin, stop))
-            begin = stop + 1
-        except Exception:  # noqa: BLE001 - coût refusé : on découpe plus fin
-            if stop - begin + 1 <= MIN_CHUNK_YEARS:
-                raise
-            stop = max(begin + MIN_CHUNK_YEARS - 1, begin + (stop - begin) // 2)
-            chunks.append(_retrieve_chunk(cfg, dataset, variable, statistic, place, begin, stop))
-            begin = stop + 1
+        chunks.extend(
+            _retrieve_block(cfg, dataset, variable, statistic, place, begin, stop, list(ALL_MONTHS))
+        )
+        begin = stop + 1
 
     merged = pd.concat(chunks).sort_index()
     return merged[~merged.index.duplicated(keep="first")]
 
 
-def _retrieve_chunk(cfg, dataset, variable, statistic, place, year_from: int, year_to: int) -> pd.Series:
+def _retrieve_block(cfg, dataset, variable, statistic, place, y0: int, y1: int, months: list[int]) -> list[pd.Series]:
+    """Un bloc d'années ; division binaire automatique si le CDS refuse."""
+    try:
+        return [_retrieve_chunk(cfg, dataset, variable, statistic, place, y0, y1, months)]
+    except Exception as exc:  # noqa: BLE001
+        if not _is_cost_error(exc):
+            raise
+        if y1 > y0:
+            mid = (y0 + y1) // 2
+            return _retrieve_block(cfg, dataset, variable, statistic, place, y0, mid, months) + (
+                _retrieve_block(cfg, dataset, variable, statistic, place, mid + 1, y1, months)
+            )
+        if len(months) > 1:
+            half = len(months) // 2
+            return _retrieve_block(cfg, dataset, variable, statistic, place, y0, y0, months[:half]) + (
+                _retrieve_block(cfg, dataset, variable, statistic, place, y0, y0, months[half:])
+            )
+        raise
+
+
+def _retrieve_chunk(
+    cfg,
+    dataset,
+    variable,
+    statistic,
+    place,
+    year_from: int,
+    year_to: int,
+    months: list[int] | None = None,
+) -> pd.Series:
     """Une requête journalière sur un bloc d'années, convertie en °C."""
     request = datasets.build_daily_request(
         variable,
         list(range(year_from, year_to + 1)),
-        list(range(1, 13)),
+        list(months) if months else list(range(1, 13)),
         list(range(1, 32)),
         list(place.area),
         daily_statistic=statistic,

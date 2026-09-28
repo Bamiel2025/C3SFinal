@@ -9,7 +9,10 @@ Vérifie deux choses sur les activités :
 from __future__ import annotations
 
 import calendar
+import json
+from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -19,8 +22,8 @@ ALL = activities.ACTIVITIES
 ALLOWED_CHARTS = {"none", "climato", "ombro", "annual", "anomalies", "compare", "map", "heat"}
 
 
-def test_eight_activities_with_four_steps() -> None:
-    assert len(ALL) == 8
+def test_ten_activities_with_four_steps() -> None:
+    assert len(ALL) == 10
     keys = [a.key for a in ALL]
     assert len(set(keys)) == len(keys)
     for act in ALL:
@@ -38,7 +41,7 @@ def test_eight_activities_with_four_steps() -> None:
 def test_list_activities_hides_answers_without_code() -> None:
     hidden = activities.list_activities(with_answers=False)
     shown = activities.list_activities(with_answers=True)
-    assert len(hidden) == len(shown) == 8
+    assert len(hidden) == len(shown) == 10
     assert "expected" not in hidden[0]["steps"][0]
     assert "expected" in shown[0]["steps"][0]
     assert config.check_teacher_code("") is False
@@ -140,10 +143,8 @@ def test_each_step_maps_to_a_renderable_chart() -> None:
         for n, step in enumerate(act.steps, start=1):
             if step.chart == "none":
                 assert act.key == "latitude" and n == 1
-            if step.chart == "heat":
-                assert act.key == "canicule"
             if step.chart == "map":
-                assert act.key in {"cartes_climatiques", "vent_pression"}
+                assert act.key in {"cartes_climatiques", "vent_pression", "pluies_europe"}
 
 
 def test_minutes_sum_to_a_class_session() -> None:
@@ -157,3 +158,46 @@ def test_days_in_month_helper_parity() -> None:
     # nombre de jours du mois dans les conversions CDS.
     assert calendar.monthrange(2020, 2)[1] == 29
     assert calendar.monthrange(2021, 2)[1] == 28
+
+
+def test_regimes_amplitudes_quoted(temp: pd.DataFrame) -> None:
+    answers = " ".join(_expected("regimes_monde"))
+    for city, quoted in (("Singapore", "1,7"), ("Paris", "15,3"), ("Longyearbyen", "19,7")):
+        m = _clim(temp, city)
+        assert f"{m.max() - m.min():.1f}".replace(".", ",") == quoted
+        assert quoted in answers
+    assert "−13,6" in answers  # signe moins typographique U+2212
+
+
+def test_portrait_bordeaux_quoted(temp: pd.DataFrame, precip: pd.DataFrame) -> None:
+    answers = " ".join(_expected("portrait_climat"))
+    t = _clim(temp, "Bordeaux")
+    p = _clim(precip, "Bordeaux")
+    assert f"{t.min():.1f}".replace(".", ",") in answers  # 6,7 en janvier
+    assert f"{t.max():.1f}".replace(".", ",") in answers  # 21,6 en juillet-août
+    assert f"{t.max() - t.min():.1f}".replace(".", ",") in answers  # 15,0
+    assert round(p.sum(), -1) == 820
+    assert "820" in answers
+
+
+def _map_point(map_id: str, lon: float, lat: float) -> float:
+    root = Path(__file__).resolve().parent.parent
+    g = json.loads(
+        (root / "public" / "assets" / "maps" / f"{map_id}.json").read_text(encoding="utf-8")
+    )
+    lats = np.array(g["lat"])
+    lons = np.array(g["lon"])
+    z = np.array(g["z"], dtype=float)
+    i = int(np.argmin(abs(lats - lat)))
+    j = int(np.argmin(abs(lons - lon)))
+    return round(float(z[i, j]))
+
+
+def test_pluies_europe_map_values() -> None:
+    answers = " ".join(_expected("pluies_europe"))
+    assert 280 <= _map_point("tp_janvier", 6, 61) <= 300  # côte ouest norvégienne
+    assert "293" in answers
+    assert _map_point("tp_juillet", -4, 37) <= 8  # Andalousie
+    assert "4 mm" in answers
+    assert _map_point("tp_juillet", 7, 46) >= 140  # Alpes
+    assert "153" in answers

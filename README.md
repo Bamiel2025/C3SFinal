@@ -17,7 +17,7 @@ séquencées en une question par étape**, corrigées avec les valeurs mesurées
 | --- | --- |
 | **Accueil** | État des données, de la clé CDS, accès rapide aux activités. |
 | **Explorateur** | Climatogramme, diagramme ombrothermique, série annuelle + tendance, anomalies, comparaison de deux périodes de 30 ans, pour 31 villes et 6 variables. |
-| **Activités** | 8 fiches (une question par étape, indicice, durée, graphique associé). Les corrigés ne s'affichent qu'avec le **code enseignant**. |
+| **Activités** | 10 fiches (une question par étape, indice, durée, graphique associé). Les corrigés ne s'affichent qu'avec le **code enseignant**. La fiche *jours de chaleur* (données journalières) est suspendue en attendant `scripts/prepare_data.py heat`. |
 | **Cartes** | 6 cartes statiques ERA5 (température janvier/juillet, précipitations janvier/juillet, pression janvier, vent + flèches). |
 | **Aide** | Sources, unités, état des fichiers pré-calculés, diagnostic de la clé CDS. |
 
@@ -82,6 +82,35 @@ powershell -File scripts/prepare_all.ps1 # tout d'un coup
 
 Les cartes et séries restent utilisables en l'absence de données journalières :
 seule l'activité *Compter les jours de chaleur* est concernée.
+
+## Fiches d'activités autonomes (HTML + PDF)
+
+Le dossier `public/activites/` contient les **10 fiches projetables et
+imprimables**, chacune dans un fichier HTML unique (CSS, JavaScript,
+graphiques et cartes inclus — aucune connexion requise une fois le fichier
+téléchargé) :
+
+- `index.html` — sommaire des 10 fiches ;
+- `<clé>.html` — fiche élève : questions, pistes, graphiques et cartes ;
+- `pdf/<clé>.pdf` — version imprimable élève (sans corrigé) ;
+- `pdf/<clé>-corrige.pdf` — version enseignant (corrigés inclus).
+
+Les corrigés sont embarqués **chiffrés** dans chaque fiche : ils n'apparaissent
+ni à l'écran ni dans le code source tant que le **code enseignant (2027)**
+n'est pas saisi. Le code est mémorisé par le navigateur ; le bouton
+*Verrouiller* le réinitialise.
+
+Régénérer les fiches après modification des données ou des corrigés :
+
+```bash
+python scripts/build_activities.py            # les 10 fiches + sommaire
+python scripts/build_activities.py --keys latitude,pluies_europe
+```
+
+Puis, serveur local lancé (`python run_local.py`), générer les PDF avec
+Playwright (`C:\Users\brice\.agents\skills\playwright`, script
+`pw-export-pdf.js` via `node run.js`) : chaque fiche est imprimée verrouillée
+(élève) puis déverrouillée au code 2027 (enseignant).
 
 ## Tests
 

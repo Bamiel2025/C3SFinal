@@ -94,11 +94,15 @@ def prepare_cities(force: bool = False) -> int:
     return done
 
 
-def prepare_heat(force: bool = False, years: tuple[int, int] = (2000, 2024)) -> int:
+def prepare_heat(
+    force: bool = False,
+    years: tuple[int, int] = (2000, 2024),
+    cities: list[str] | None = None,
+) -> int:
     """Télécharge les séries journalières (maximum / minimum) de l'activité."""
     start, end = years
     done = 0
-    for city in DEFAULT_HEAT_CITIES:
+    for city in cities or DEFAULT_HEAT_CITIES:
         for kind, filename in (("tmax", heat.TMAX_FILE), ("tmin", heat.TMIN_FILE)):
             frame = heat._load(filename)
             if not force and frame is not None and city in frame.columns:
@@ -135,9 +139,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--force", action="store_true", help="re-télécharge même ce qui existe")
     parser.add_argument("--years", default="2000-2024", help="période journalière (AAAA-AAAA)")
+    parser.add_argument(
+        "--cities",
+        default="",
+        help="liste de villes pour `heat`, séparées par des virgules (défaut : %s)"
+        % ",".join(DEFAULT_HEAT_CITIES),
+    )
     args = parser.parse_args(argv)
 
     first, last = (int(x) for x in args.years.split("-"))
+    wanted = [c.strip() for c in args.cities.split(",") if c.strip()]
     cfg = config.resolve_cds_config()
     log(f"Clé CDS : {cfg.masked_key() or 'absente'} — période journalière {first}-{last}")
 
@@ -147,7 +158,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.task in ("cities", "all"):
         count += prepare_cities(force=args.force)
     if args.task in ("heat", "all"):
-        count += prepare_heat(force=args.force, years=(first, last))
+        count += prepare_heat(force=args.force, years=(first, last), cities=wanted or None)
 
     store.clear_cache()
     heat.clear_cache()
