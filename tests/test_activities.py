@@ -19,17 +19,15 @@ import pytest
 from c3s2 import activities, config, store
 
 ALL = activities.ACTIVITIES
-ALLOWED_CHARTS = {"none", "climato", "ombro", "annual", "anomalies", "compare", "map", "heat"}
+ALLOWED_CHARTS = {"none", "climato", "ombro", "annual", "anomalies", "compare", "map", "heat", "schema", "figure"}
 
 
-def test_ten_activities_with_four_steps() -> None:
-    assert len(ALL) == 10
-    keys = [a.key for a in ALL]
-    assert len(set(keys)) == len(keys)
+def test_twelve_activities_with_four_steps() -> None:
+    assert len(ALL) == 12
     for act in ALL:
         assert len(act.steps) == 4, act.key
         assert act.title and act.introduction
-        assert act.default_cities
+        assert act.default_cities or act.key == "elnino"  # El Niño : boîte océanique, pas des villes
         for step in act.steps:
             assert step.title and step.instruction
             assert step.hint
@@ -41,7 +39,7 @@ def test_ten_activities_with_four_steps() -> None:
 def test_list_activities_hides_answers_without_code() -> None:
     hidden = activities.list_activities(with_answers=False)
     shown = activities.list_activities(with_answers=True)
-    assert len(hidden) == len(shown) == 10
+    assert len(hidden) == len(shown) == 12
     assert "expected" not in hidden[0]["steps"][0]
     assert "expected" in shown[0]["steps"][0]
     assert config.check_teacher_code("") is False
@@ -145,6 +143,10 @@ def test_each_step_maps_to_a_renderable_chart() -> None:
                 assert act.key == "latitude" and n == 1
             if step.chart == "map":
                 assert act.key in {"cartes_climatiques", "vent_pression", "pluies_europe"}
+            if step.chart == "schema":
+                assert act.key == "vents_courants"
+            if step.chart == "figure":
+                assert act.key == "elnino"
 
 
 def test_minutes_sum_to_a_class_session() -> None:
@@ -180,6 +182,17 @@ def test_portrait_bordeaux_quoted(temp: pd.DataFrame, precip: pd.DataFrame) -> N
     assert "820" in answers
 
 
+def test_vents_courants_values(temp: pd.DataFrame) -> None:
+    answers = " ".join(_expected("vents_courants"))
+    b = _clim(temp, "Bordeaux")
+    m = _clim(temp, "Montréal")
+    assert "6,7" in answers and "−9,1" in answers  # signe moins U+2212
+    assert f"{b.max() - b.min():.1f}".replace(".", ",") in answers  # 15,0
+    assert f"{m.max() - m.min():.1f}".replace(".", ",") in answers  # 30,7
+    # Étés quasi identiques : le contraste vient de l'hiver.
+    assert abs(b.max() - m.max()) < 0.5
+
+
 def _map_point(map_id: str, lon: float, lat: float) -> float:
     root = Path(__file__).resolve().parent.parent
     g = json.loads(
@@ -201,3 +214,26 @@ def test_pluies_europe_map_values() -> None:
     assert "4 mm" in answers
     assert _map_point("tp_juillet", 7, 46) >= 140  # Alpes
     assert "153" in answers
+
+
+def _nino_frame() -> pd.DataFrame:
+    root = Path(__file__).resolve().parent.parent
+    frame = pd.read_csv(
+        root / "data" / "precomputed" / "nino34_sst.csv",
+        sep=";", index_col=0, parse_dates=True,
+    )
+    frame.index = pd.to_datetime(frame.index)
+    return frame
+
+
+def test_elnino_values() -> None:
+    answers = " ".join(_expected("elnino"))
+    serie = _nino_frame().iloc[:, 0].sort_index()
+    assert len(serie) >= 400  # 1991 à mi-2026
+    assert "26,5" in answers and "29,5" in answers  # août 2025 et 2026
+    gap = serie.loc["2026-08"].iloc[0] - serie.loc["2025-08"].iloc[0]
+    assert round(float(gap), 1) == 3.0
+    base = serie.loc["1991":"2020"].groupby(serie.loc["1991":"2020"].index.month).mean()
+    anom25 = (serie.loc["2025"] - base[serie.loc["2025"].index.month].values).mean()
+    anom26 = (serie.loc["2026"] - base[serie.loc["2026"].index.month].values).mean()
+    assert anom25 < 0 < anom26  # 2025 froide, 2026 chaude

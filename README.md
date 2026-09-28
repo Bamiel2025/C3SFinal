@@ -2,7 +2,7 @@
 
 Application web pédagogique pour découvrir le climat avec les **données réelles
 ERA5** (Copernicus Climate Data Store / C3S), reconstruite en FastAPI +
-JavaScript sans Streamlit : graphiques interactifs, cartes, et **10 activités
+JavaScript sans Streamlit : graphiques interactifs, cartes, et **12 activités
 séquencées en une question par étape**, corrigées avec les valeurs mesurées.
 
 - Données : ERA5, moyennes mensuelles **1991-2020** (normale OMM), série
@@ -83,14 +83,25 @@ powershell -File scripts/prepare_all.ps1 # tout d'un coup
 Les cartes et séries restent utilisables en l'absence de données journalières :
 seule l'activité *Compter les jours de chaleur* est concernée.
 
+Données particulières (déjà versionnées, à régénérer seulement si besoin) :
+
+- `data/precomputed/nino34_sst.csv` — température mensuelle de la mer en
+  surface moyennée sur la boîte Niño 3.4 (5° N–5° S, 170° O–120° O),
+  1991 à mi-2026, téléchargée du jeu mensuel ERA5 (variable
+  `sea_surface_temperature`, ajoutée à `c3s2/datasets.py`).
+- `public/assets/schemas/courants_atlantique.png` — **schéma pédagogique
+  simplifié** des courants (Gulf Stream, Labrador) et des vents d'ouest,
+  dessiné par `scripts/build_activities.py` : le CDS ne fournit pas de
+  courants, la fiche et l'application le signalent explicitement.
+
 ## Fiches d'activités autonomes (HTML + PDF)
 
-Le dossier `public/activites/` contient les **10 fiches projetables et
+Le dossier `public/activites/` contient les **12 fiches projetables et
 imprimables**, chacune dans un fichier HTML unique (CSS, JavaScript,
 graphiques et cartes inclus — aucune connexion requise une fois le fichier
 téléchargé) :
 
-- `index.html` — sommaire des 10 fiches ;
+- `index.html` — sommaire des 12 fiches ;
 - `<clé>.html` — fiche élève : questions, pistes, graphiques et cartes ;
 - `pdf/<clé>.pdf` — version imprimable élève (sans corrigé) ;
 - `pdf/<clé>-corrige.pdf` — version enseignant (corrigés inclus).
@@ -103,7 +114,7 @@ n'est pas saisi. Le code est mémorisé par le navigateur ; le bouton
 Régénérer les fiches après modification des données ou des corrigés :
 
 ```bash
-python scripts/build_activities.py            # les 10 fiches + sommaire
+python scripts/build_activities.py            # les 12 fiches + sommaire
 python scripts/build_activities.py --keys latitude,pluies_europe
 ```
 

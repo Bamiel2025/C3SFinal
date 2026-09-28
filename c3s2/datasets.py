@@ -98,8 +98,19 @@ WIND_V = Variable(
     color="#2a9d8f",
 )
 
+SST = Variable(
+    slug="sea_surface_temperature",
+    label="Température de la mer en surface",
+    unit="°C",
+    long_name="Sea surface temperature",
+    kind="temperature",
+    lesson="El Niño, courants océaniques",
+    color="#2a9d8f",
+    description="Température de la surface des océans, en degrés Celsius.",
+)
+
 VARIABLES: dict[str, Variable] = {
-    v.slug: v for v in (TEMPERATURE, PRECIPITATION, PRESSURE, WIND_U, WIND_V)
+    v.slug: v for v in (TEMPERATURE, PRECIPITATION, PRESSURE, WIND_U, WIND_V, SST)
 }
 
 #: Variables réellement proposées dans l'interface.
@@ -184,6 +195,7 @@ SHORT_NAMES: dict[str, str] = {
     "minimum_2m_temperature": "mn2t",
     "2m_dewpoint_temperature": "d2m",
     "total_precipitation": "tp",
+    "sea_surface_temperature": "sst",
     "mean_sea_level_pressure": "msl",
     "surface_pressure": "sp",
     "total_cloud_cover": "tcc",

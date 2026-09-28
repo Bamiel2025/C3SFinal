@@ -147,6 +147,7 @@ code, .mono { font-family: var(--mono); font-size: .92em; }
 .card-title { display: flex; align-items: baseline; justify-content: space-between; gap: .8rem; margin-bottom: .7rem; }
 .card-title h3 { margin: 0; }
 .card.flush { padding: .7rem; }
+.situation { display: block; max-width: 100%; border: 1px solid var(--line); border-radius: 10px; margin-top: .7rem; }
 
 .panel-title {
   display: flex; align-items: center; justify-content: space-between;

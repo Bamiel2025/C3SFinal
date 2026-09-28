@@ -856,8 +856,10 @@
               <span class="badge">${esc(act.levels)}</span>
               <span class="badge">${esc(act.duration)}</span>
               <span class="badge">${act.n_steps} étapes</span>
-              <span class="badge">${esc(act.cities.join(" · "))}</span>
+              ${act.cities.length ? `<span class="badge">${esc(act.cities.join(" · "))}</span>` : ""}
             </div>
+            <img src="assets/situation/${esc(act.key)}.png" alt="Situation des villes étudiées"
+              class="situation" loading="lazy" onerror="this.remove()">
           </div>
           ${state.unlocked ? '<span class="badge badge-ok">corrigés visibles</span>' : ""}
         </div>
@@ -983,6 +985,8 @@
       anomalies: "anomalies",
       compare: "avant / après",
       map: "carte climatique",
+      schema: "schéma des courants",
+      figure: "figure de données",
       heat: "données journalières",
       line: "séries mensuelles",
       none: "aucun graphique"
@@ -1045,6 +1049,28 @@
       html("activity-chart-note",
         "Jours avec maximum ≥ " + ctx.heatPayload.meta.tmax_threshold +
         " °C et minimum ≥ " + ctx.heatPayload.meta.tmin_threshold + " °C.");
+      return;
+    }
+
+    if (step.chart === "schema") {
+      html("chart-title", "Courants de surface de l'Atlantique Nord — schéma");
+      html(target.replace("#", ""),
+        '<img src="assets/schemas/courants_atlantique.png" ' +
+        'alt="Schéma des courants de l\'Atlantique Nord" class="situation">');
+      html("activity-legend", "");
+      html("activity-chart-note", "Schéma pédagogique simplifié (pas une donnée CDS).");
+      return;
+    }
+
+    if (step.chart === "figure") {
+      const n = ((ctx.act && ctx.act.steps) || []).indexOf(step) + 1;
+      html("chart-title", "Figure de données — étape " + n);
+      html(target.replace("#", ""),
+        '<img src="assets/figures/' + act.key + '_' + n + '.png" ' +
+        'alt="Figure de données de l\'étape ' + n + '" class="situation" ' +
+        'onerror="this.outerHTML=\'<p class=&quot;small muted&quot;>Figure indisponible.</p>\'">');
+      html("activity-legend", "");
+      html("activity-chart-note", "Figure construite sur des données ERA5 pré-calculées.");
       return;
     }
 

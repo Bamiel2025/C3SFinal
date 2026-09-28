@@ -46,14 +46,16 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.patheffects as pe  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 from matplotlib.colors import LinearSegmentedColormap  # noqa: E402
+from matplotlib.patches import Polygon as MplPolygon  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from c3s2 import activities, config, fields, store  # noqa: E402
+from c3s2 import activities, config, datasets, fields, places, store  # noqa: E402
 
 OUT_DIR = ROOT / "public" / "activites"
 TEACHER_CODE = "2027"
@@ -126,6 +128,235 @@ def coastlines() -> list[list[tuple[float, float]]]:
     if _COASTLINES is None:
         _COASTLINES = _coastlines()
     return _COASTLINES
+
+
+_LAND: list[list[tuple[float, float]]] | None = None
+
+
+def land_polys() -> list[list[tuple[float, float]]]:
+    """Anneaux des continents (fond de carte des situations et schémas)."""
+    global _LAND
+    if _LAND is None:
+        path = ROOT / "data" / "maps" / "ne_110m_land.geojson"
+        gj = json.loads(path.read_text(encoding="utf-8"))
+        polys: list[list[tuple[float, float]]] = []
+        for feat in gj.get("features", []):
+            for ring in feat.get("geometry", {}).get("coordinates", []):
+                polys.append([(float(x), float(y)) for x, y in ring])
+        _LAND = polys
+    return _LAND
+
+
+def city_points(cities: list[str]) -> list[tuple[str, float, float]]:
+    """(nom, longitude, latitude) pour les villes connues, dans l'ordre."""
+    pts: list[tuple[str, float, float]] = []
+    for city in cities:
+        place = places.get(city)
+        if place is not None:
+            pts.append((city, float(place.lon), float(place.lat)))
+    return pts
+
+
+def draw_land(ax: plt.Axes) -> None:
+    for ring in land_polys():
+        ax.add_patch(MplPolygon(ring, closed=True, fc="#e3eaf2", ec="#94a3b8", lw=0.5, zorder=1))
+    for line in coastlines():
+        ax.plot(
+            [p[0] for p in line], [p[1] for p in line],
+            color="#64748b", lw=0.5, zorder=2,
+        )
+
+
+def draw_cities(ax: plt.Axes, pts: list[tuple[str, float, float]], fontsize: int = 10) -> None:
+    for i, (name, x, y) in enumerate(pts):
+        ax.scatter([x], [y], s=100, c=CITY_COLORS[i % len(CITY_COLORS)],
+                   ec="white", lw=1.5, zorder=5)
+        ax.text(
+            x, y, "  " + name, fontsize=fontsize, fontweight="bold", color="#1f3a5f",
+            va="center", ha="left", zorder=6,
+            path_effects=[pe.withStroke(linewidth=3, foreground="white")],
+        )
+
+
+def fig_situation(cities: list[str]) -> tuple[str, str]:
+    """Carte de situation des villes (emprise calculée automatiquement)."""
+    pts = city_points(cities)
+    if not pts:
+        raise KeyError(f"Aucune ville connue parmi : {cities}")
+    lons = [x for _, x, _ in pts]
+    lats = [y for _, _, y in pts]
+    dx = max(max(lons) - min(lons), 0.1)
+    dy = max(max(lats) - min(lats), 0.1)
+    x0, x1 = min(lons) - dx * 0.35 - 3, max(lons) + dx * 0.35 + 3
+    y0, y1 = max(min(lats) - dy * 0.4 - 2.5, -60), min(max(lats) + dy * 0.4 + 2.5, 84)
+    fig, ax = plt.subplots(figsize=(8.6, 4.1))
+    draw_land(ax)
+    draw_cities(ax, pts)
+    ax.set_xlim(x0, x1)
+    ax.set_ylim(y0, y1)
+    ax.set_xlabel("Longitude (°E)")
+    ax.set_ylabel("Latitude (°N)")
+    ax.set_title("Situation — " + ", ".join(cities), pad=10)
+    return "png", _as_png(fig)
+
+
+def fig_courants() -> tuple[str, str]:
+    """Schéma simplifié des courants de surface de l'Atlantique Nord.
+
+    Le CDS ne fournit pas de courants : ce schéma pédagogique (flèches
+    stylisées, pas des données) montre le Gulf Stream chaud vers l'Europe et
+    le courant froid du Labrador vers le Canada, avec les vents d'ouest.
+    """
+    fig, ax = plt.subplots(figsize=(9.0, 5.6))
+    draw_land(ax)
+    draw_cities(ax, city_points(["Bordeaux", "Montréal"]))
+
+    def arrow(path: list[tuple[float, float]], color: str, width: float = 2.6) -> None:
+        for (x0, y0), (x1, y1) in zip(path[:-1], path[1:]):
+            ax.annotate(
+                "", xy=(x1, y1), xytext=(x0, y0),
+                arrowprops={"arrowstyle": "->", "color": color, "lw": width,
+                            "shrinkA": 0, "shrinkB": 3},
+                zorder=4,
+            )
+
+    # Gulf Stream puis dérive nord-atlantique (chaud, vers l'Europe).
+    arrow([(-80, 27), (-74, 34), (-66, 39), (-55, 42), (-42, 46)], "#c2312b")
+    arrow([(-42, 46), (-30, 50), (-18, 54), (-8, 55)], "#e07a5f")
+    # Courant du Labrador (froid, vers le sud le long du Canada).
+    arrow([(-56, 61), (-55, 55), (-53, 49), (-50, 45)], "#31688e")
+    # Vents d'ouest (gris, d'ouest en est).
+    for y in (38, 46, 54):
+        arrow([(-70, y), (-52, y), (-34, y)], "#64748b", width=1.4)
+    ax.text(-66, 31, "Gulf Stream\n(chaud)", color="#c2312b", fontsize=9,
+            fontweight="bold", ha="center",
+            path_effects=[pe.withStroke(linewidth=3, foreground="white")], zorder=6)
+    ax.text(-58, 56.5, "Labrador\n(froid)", color="#31688e", fontsize=9,
+            fontweight="bold", ha="center",
+            path_effects=[pe.withStroke(linewidth=3, foreground="white")], zorder=6)
+    ax.text(-44, 34.5, "vents d'ouest", color="#475569", fontsize=9, ha="center",
+            path_effects=[pe.withStroke(linewidth=3, foreground="white")], zorder=6)
+    ax.set_xlim(-85, 5)
+    ax.set_ylim(28, 64)
+    ax.set_xlabel("Longitude (°E)")
+    ax.set_ylabel("Latitude (°N)")
+    ax.set_title("Courants de surface de l'Atlantique Nord — schéma simplifié", pad=10)
+    return "png", _as_png(fig)
+
+
+def _nino_series() -> pd.Series:
+    path = ROOT / "data" / "precomputed" / "nino34_sst.csv"
+    serie = pd.read_csv(path, sep=";", index_col=0, parse_dates=True).iloc[:, 0]
+    serie.index = pd.to_datetime(serie.index)
+    return serie.sort_index()
+
+
+def _nino_baseline(serie: pd.Series) -> pd.Series:
+    window = serie.loc["1991":"2020"]
+    return window.groupby(window.index.month).mean()
+
+
+def _save_figure_png(fig: plt.Figure, filename: str) -> str:
+    FIGURES_DIR.mkdir(parents=True, exist_ok=True)
+    payload = _as_png(fig)
+    (FIGURES_DIR / filename).write_bytes(base64.b64decode(payload))
+    return payload
+
+
+FIGURES_DIR = ROOT / "public" / "assets" / "figures"
+
+
+def fig_nino_series(filename: str) -> tuple[str, str, str]:
+    """Températures mensuelles Niño 3.4 : 2025 contre 2026 (données réelles)."""
+    serie = _nino_series()
+    y25 = serie.loc["2025"]
+    y26 = serie.loc["2026"]
+    fig, ax = plt.subplots(figsize=(8.6, 4.6))
+    ax.plot(range(1, 13), y25.values, marker="o", color="#64748b", lw=2, label="2025")
+    x26 = list(y26.index.month)
+    ax.plot(x26, y26.values, marker="o", color="#c2312b", lw=2.5, label="2026 (janv.–août)")
+    ax.set_xticks(range(1, 13))
+    ax.set_xticklabels(MONTHS)
+    ax.set_ylabel("Température (°C)")
+    ax.set_title("Température de la boîte Niño 3.4 — 2025 et 2026", pad=12)
+    ax.legend(frameon=False, loc="best")
+    payload = _save_figure_png(fig, filename)
+    return "png", payload, "Température mensuelle de la boîte Niño 3.4 (ERA5, données réelles)."
+
+
+def fig_nino_anom(filename: str) -> tuple[str, str, str]:
+    """Anomalies mensuelles 2025-2026 par rapport à la normale 1991-2020."""
+    serie = _nino_series()
+    base = _nino_baseline(serie)
+    sel = pd.concat([serie.loc["2025"], serie.loc["2026"]])
+    anom = sel.values - base[sel.index.month].values
+    colors = ["#c2312b" if v >= 0 else "#31688e" for v in anom]
+    labels = [d.strftime("%b %Y") for d in sel.index]
+    fig, ax = plt.subplots(figsize=(8.6, 4.6))
+    ax.bar(range(len(sel)), anom, color=colors)
+    ax.axhline(0, color="black", lw=0.8)
+    ax.set_xticks(range(len(sel)))
+    ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=8)
+    ax.set_ylabel("Anomalie (°C)")
+    ax.set_title("Anomalie mensuelle — 2025 et 2026 (normale 1991-2020)", pad=12)
+    payload = _save_figure_png(fig, filename)
+    return "png", payload, "Écart de chaque mois à la normale 1991-2020 du même mois."
+
+
+def fig_nino_timeline(filename: str) -> tuple[str, str, str]:
+    """Anomalies mensuelles 2023-2026 : El Niño 2023-2024 puis 2026."""
+    serie = _nino_series()
+    base = _nino_baseline(serie)
+    window = serie.loc["2023":]
+    anom = window.values - base[window.index.month].values
+    colors = ["#c2312b" if v >= 0 else "#31688e" for v in anom]
+    fig, ax = plt.subplots(figsize=(8.6, 4.6))
+    ax.bar(range(len(window)), anom, color=colors, width=0.9)
+    ax.axhline(0, color="black", lw=0.8)
+    ax.axhline(0.5, color="#c2312b", lw=1, ls="--", alpha=0.7)
+    step = 6
+    ax.set_xticks(range(0, len(window), step))
+    ax.set_xticklabels(
+        [d.strftime("%b %Y") for d in window.index[::step]], rotation=45, ha="right", fontsize=8
+    )
+    ax.set_ylabel("Anomalie (°C)")
+    ax.set_title("Anomalie mensuelle 2023-2026 — El Niño puis réchauffement 2026", pad=12)
+    payload = _save_figure_png(fig, filename)
+    return "png", payload, "Pointillés : +0,5 °C, seuil d'un hiver El Niño."
+
+
+def fig_nino_box(filename: str) -> tuple[str, str, str]:
+    """Situation de la boîte Niño 3.4 dans le Pacifique tropical."""
+    from matplotlib.patches import Rectangle as MplRectangle
+
+    fig, ax = plt.subplots(figsize=(8.6, 4.4))
+    draw_land(ax)
+    box = MplRectangle((-170, -5), 50, 10, fc="none",
+                       ec="#c2312b", lw=2.5, zorder=5)
+    ax.add_patch(box)
+    ax.text(-145, 0, "Niño 3.4", color="#c2312b", fontsize=11, fontweight="bold",
+            ha="center", va="center", zorder=6,
+            path_effects=[pe.withStroke(linewidth=3, foreground="white")])
+    ax.set_xlim(-180, -60)
+    ax.set_ylim(-30, 30)
+    ax.set_xlabel("Longitude (°E)")
+    ax.set_ylabel("Latitude (°N)")
+    ax.set_title("La boîte Niño 3.4 (5° N–5° S, 170° O–120° O)", pad=10)
+    payload = _save_figure_png(fig, filename)
+    return "png", payload, "Zone de surveillance d'El Niño : moyenne des températures de surface."
+
+
+def data_figures(act_key: str, n: int) -> list[tuple[str, str, str]]:
+    """Figures de données pré-calculées (PNG servis aussi à l'application)."""
+    if act_key == "elnino":
+        if n == 1:
+            return [fig_nino_series("elnino_1.png"), fig_nino_box("elnino_1b.png")]
+        if n == 2:
+            return [fig_nino_series("elnino_2.png")]
+        if n == 3:
+            return [fig_nino_anom("elnino_3.png")]
+        return [fig_nino_timeline("elnino_4.png")]
+    raise KeyError(f"Aucune figure de données pour : {act_key} (étape {n})")
 
 
 # --------------------------------------------------------------------------- #
@@ -444,6 +675,8 @@ CHART_LABELS = {
     "anomalies": "anomalies annuelles",
     "compare": "comparaison de périodes",
     "map": "carte climatique",
+    "schema": "schéma des courants",
+    "figure": "figure de données",
 }
 
 
@@ -495,6 +728,12 @@ def step_figures(act: activities.Activity) -> list[list[tuple[str, str, str]]]:
         elif chart == "compare":
             kind, payload = fig_compare(cities[0])
             figs.append((kind, payload, f"Deux périodes de trente ans comparées mois par mois — {cities[0]}."))
+        elif chart == "schema":
+            kind, payload = fig_courants()
+            figs.append((kind, payload, "Schéma simplifié des courants (pas une donnée CDS)."))
+        elif chart == "figure":
+            for kind, payload, caption in data_figures(act.key, n):
+                figs.append((kind, payload, caption))
         elif chart == "map" and n - 1 < len(maps):
             mid = maps[n - 1]
             if mid not in map_cache:
@@ -508,6 +747,16 @@ def step_figures(act: activities.Activity) -> list[list[tuple[str, str, str]]]:
 
 def render_activity(act: activities.Activity) -> str:
     figs = step_figures(act)
+    city_list = list(act.default_cities)
+    if city_list:
+        kind, payload = fig_situation(city_list)
+        situation_html = (
+            '  <section class="card">\n    <h2>Où sont ces villes ?</h2>\n    '
+            + figure_html(kind, payload, "Situation des villes étudiées.")
+            + "\n  </section>"
+        )
+    else:
+        situation_html = ""
     steps_html: list[str] = []
     for i, step in enumerate(act.steps, start=1):
         figs_html = "".join(figure_html(k, p, c) for k, p, c in figs[i - 1])
@@ -535,7 +784,11 @@ def render_activity(act: activities.Activity) -> str:
       </section>"""
         )
     cities = ", ".join(act.default_cities)
-    variables = ", ".join(act.variables)
+    variables = ", ".join(
+        datasets.VARIABLES[v].label if v in datasets.VARIABLES else v
+        for v in act.variables
+    )
+    cities_badge = f'\n    <span class="badge">{esc(cities)}</span>' if cities else ""
     return f"""<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -554,8 +807,7 @@ def render_activity(act: activities.Activity) -> str:
   <p class="kicker">Fiche pédagogique · {esc(act.subject)} · {esc(act.levels)} · {esc(act.duration)}</p>
   <h1>{esc(act.title)} <span class="badge badge-ok" id="lock-badge" style="display:none">corrigés visibles</span></h1>
   <p>
-    <span class="badge">4 étapes</span>
-    <span class="badge">{esc(cities)}</span>
+    <span class="badge">4 étapes</span>{cities_badge}
     <span class="badge">{esc(variables)}</span>
   </p>
   <section class="card">
@@ -565,6 +817,7 @@ def render_activity(act: activities.Activity) -> str:
     <h2>Ce que tu vas apprendre à faire</h2>
     <p>{" · ".join(esc(s) for s in act.skills)}</p>
   </section>
+  {situation_html}
   <section class="card teacher no-print" id="lock-form">
     <b>Code enseignant</b>
     <div style="display:flex;gap:.5rem;align-items:center;margin-top:.4rem;flex-wrap:wrap">
@@ -631,6 +884,8 @@ def render_index(acts: list[activities.Activity]) -> str:
 
 def build(keys: list[str] | None = None) -> list[Path]:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    situations = OUT_DIR.parent / "assets" / "situation"
+    situations.mkdir(parents=True, exist_ok=True)
     acts = [a for a in activities.ACTIVITIES if not keys or a.key in keys]
     written: list[Path] = []
     for act in acts:
@@ -638,6 +893,18 @@ def build(keys: list[str] | None = None) -> list[Path]:
         path = OUT_DIR / f"{act.key}.html"
         path.write_text(render_activity(act), encoding="utf-8")
         written.append(path)
+        # Carte de situation réutilisée par l'application web (sauf activités
+        # sans villes, comme El Niño : l'image absente est masquée par l'app).
+        try:
+            _, png = fig_situation(list(act.default_cities))
+            (situations / f"{act.key}.png").write_bytes(base64.b64decode(png))
+        except KeyError:
+            pass
+    schemas = OUT_DIR.parent / "assets" / "schemas"
+    if any(s.chart == "schema" for a in acts for s in a.steps):
+        schemas.mkdir(parents=True, exist_ok=True)
+        _, courant = fig_courants()
+        (schemas / "courants_atlantique.png").write_bytes(base64.b64decode(courant))
     if not keys:
         index = OUT_DIR / "index.html"
         index.write_text(render_index(acts), encoding="utf-8")

@@ -368,7 +368,7 @@ def _precipitation_indices(
     if not clim.empty:
         narrative = (
             f"Les précipitations {where}culminent en {MONTH_LABELS_LONG[wettest - 1]} "
-            f"({_fmt(float(clim.max()), 0)} {unit}) et descendent à leur minimum en "
+            f"({_fmt(float(clim.max()), 0)} {unit}) et diminuent jusqu'à leur minimum en "
             f"{MONTH_LABELS_LONG[driest - 1]} ({_fmt(float(clim.min()), 0)} {unit}) : "
             f"le cumul annuel atteint {_fmt(annual_total, 0)} {unit}."
         )

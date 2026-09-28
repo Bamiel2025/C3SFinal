@@ -642,7 +642,7 @@ LATITUDE = Activity(
             expected=(
                 "Dakar, avec 21,5 °C de moyenne en janvier, contre 4,3 °C à "
                 "Paris : un écart de 17 °C pour 34 degrés de latitude. Longyearbyen, "
-                "elle, descend à −13,6 °C."
+                "elle, affiche −13,6 °C."
             ),
             hint="Lis la température de janvier sur la courbe de chaque ville.",
             chart="climato",
@@ -1172,14 +1172,217 @@ PORTRAIT_CLIMAT = Activity(
                 "citant quatre nombres : froid, chaud, amplitude, pluie annuelle."
             ),
             expected=(
-                "Exemple attendu : « À Bordeaux, l'hiver descend à 6,7 °C en "
-                "janvier et l'été monte à 21,6 °C, soit une amplitude de "
+                "Exemple attendu : « À Bordeaux, la température diminue jusqu'à "
+                "6,7 °C en janvier et augmente jusqu'à 21,6 °C l'été, soit une amplitude de "
                 "15,0 °C, avec 820 mm de pluie répartis sur l'année : un climat "
                 "océanique à été chaud. » La phrase doit contenir les quatre "
                 "nombres et le nom du régime."
             ),
             hint="Une phrase scientifique cite toujours des valeurs, pas des impressions.",
             chart="climato",
+            minutes=8,
+        ),
+    ),
+)
+
+
+# --------------------------------------------------------------------------- #
+# 12. Vents et courants : Bordeaux et Montréal
+# --------------------------------------------------------------------------- #
+
+VENTS_COURANTS = Activity(
+    key="vents_courants",
+    title="Bordeaux et Montréal : pourquoi le même été mais pas le même hiver ?",
+    levels="4e · 3e",
+    duration="55 min",
+    subject="SVT · Géographie",
+    objective=(
+        "Comparer deux villes de même latitude et expliquer l'écart de leurs "
+        "hivers par les vents d'ouest et les courants (Gulf Stream, Labrador)."
+    ),
+    skills=(
+        "Lire une normale mensuelle pour deux villes",
+        "Calculer une amplitude et comparer",
+        "Lire un schéma de courants et le relier aux températures",
+    ),
+    introduction=(
+        "Bordeaux (44,8° N) et Montréal (45,5° N) : même latitude, même été "
+        "à 21,5 °C… mais 16 °C d'écart en janvier. Les vents d'ouest traversent "
+        "l'Atlantique d'ouest en est : que transportent-ils vers chaque rive ?"
+    ),
+    default_cities=("Bordeaux", "Montréal"),
+    variables=("2m_temperature",),
+    chart="climato",
+    keywords=("courants", "vents", "Gulf Stream", "Labrador"),
+    difficulty=2,
+    steps=(
+        Step(
+            title="Décrire l'écart",
+            instruction=(
+                "Lis la température de janvier à Bordeaux (6,7 °C) et à Montréal "
+                "(−9,1 °C) : quel est l'écart entre les deux ?"
+            ),
+            expected=(
+                "6,7 − (−9,1) = 15,8 °C, soit environ 16 °C d'écart pour un seul "
+                "degré de latitude. L'hiver n'a rien d'égal alors que les deux "
+                "villes sont à la même latitude."
+            ),
+            hint="Écart = valeur la plus haute moins valeur la plus basse.",
+            chart="climato",
+            minutes=5,
+        ),
+        Step(
+            title="Calculer et comparer",
+            instruction=(
+                "Calcule l'amplitude annuelle des deux villes et compare leurs "
+                "étés."
+            ),
+            expected=(
+                "Bordeaux : 15,0 °C (de 6,7 à 21,6 °C). Montréal : 30,7 °C "
+                "(de −9,1 à 21,5 °C) : le double. Pourtant les étés sont "
+                "identiques (21,6 contre 21,5 °C) : tout l'écart vient de l'hiver."
+            ),
+            hint="Amplitude = mois le plus chaud moins mois le plus froid.",
+            chart="climato",
+            minutes=6,
+        ),
+        Step(
+            title="Lire la carte des courants",
+            instruction=(
+                "Sur le schéma, suis la flèche chaude du Gulf Stream et la "
+                "flèche froide du Labrador : vers quelle rive de l'Atlantique "
+                "va chacune ?"
+            ),
+            expected=(
+                "Le Gulf Stream (rouge) remonte le long de la côte américaine "
+                "puis traverse vers l'Europe : il réchauffe la rive de "
+                "Bordeaux. Le courant du Labrador (bleu) descend de l'Arctique "
+                "le long du Canada jusqu'à Terre-Neuve : il refroidit la rive "
+                "de Montréal."
+            ),
+            hint="Le rouge transporte de la chaleur vers l'est, le bleu du froid vers le sud.",
+            chart="schema",
+            minutes=7,
+        ),
+        Step(
+            title="Expliquer",
+            instruction=(
+                "Pourquoi les vents d'ouest adoucissent-ils l'hiver de Bordeaux "
+                "mais pas celui de Montréal ?"
+            ),
+            expected=(
+                "À Bordeaux, les vents d'ouest arrivent chargés de la chaleur "
+                "du Gulf Stream et de la dérive nord-atlantique : l'hiver reste "
+                "à 6,7 °C. À Montréal, ces mêmes vents ont traversé un continent "
+                "glacé, et le courant froid du Labrador baigne la côte : "
+                "l'hiver tombe à −9,1 °C. L'été, le continent chauffe des deux "
+                "côtés : 21,5 °C partout. Même latitude ne veut pas dire même "
+                "climat."
+            ),
+            hint="Relie « vents d'ouest », « Gulf Stream » et « Labrador » aux deux hivers.",
+            chart="climato",
+            minutes=8,
+        ),
+    ),
+)
+
+
+# --------------------------------------------------------------------------- #
+# 13. El Niño : le Pacifique se réchauffe (2025-2026)
+# --------------------------------------------------------------------------- #
+
+ELNINO = Activity(
+    key="elnino",
+    title="El Niño : quand l'océan Pacifique se réchauffe",
+    levels="4e · 3e",
+    duration="55 min",
+    subject="SVT · Géographie",
+    objective=(
+        "Mesurer le réchauffement du Pacifique équatorial entre 2025 et 2026 "
+        "et expliquer le mécanisme d'El Niño (alizés, eau chaude, upwelling)."
+    ),
+    skills=(
+        "Lire une température de surface océanique",
+        "Calculer une anomalie par rapport à une normale",
+        "Expliquer El Niño par l'affaiblissement des alizés",
+    ),
+    introduction=(
+        "En août 2025, le Pacifique équatorial affichait 26,5 °C. En août "
+        "2026 : 29,5 °C. Trois degrés en un an, sur un océan entier : El Niño "
+        "est de retour. D'où vient cette chaleur ? Les mesures de la boîte "
+        "Niño 3.4 (5° N–5° S, 170° O–120° O) vont vous le dire."
+    ),
+    default_cities=(),
+    variables=("sea_surface_temperature",),
+    chart="figure",
+    keywords=("El Niño", "océan", "anomalie", "alizés"),
+    difficulty=3,
+    steps=(
+        Step(
+            title="Décrire l'écart",
+            instruction=(
+                "Lis la température d'août 2025 (26,5 °C) et d'août 2026 "
+                "(29,5 °C) dans la boîte Niño 3.4 : quel est l'écart ?"
+            ),
+            expected=(
+                "29,5 − 26,5 = 3,0 °C en un an, pour le même mois et la même "
+                "zone. Sur un océan, un tel écart en douze mois est considérable : "
+                "c'est la signature d'El Niño."
+            ),
+            hint="Écart = valeur 2026 moins valeur 2025, pour le même mois.",
+            chart="figure",
+            minutes=5,
+        ),
+        Step(
+            title="Comparer les années",
+            instruction=(
+                "Calcule l'anomalie moyenne de 2025 (−0,4 °C) et du début 2026 "
+                "(+0,9 °C) par rapport à la normale 1991-2020 : que se passe-t-il ?"
+            ),
+            expected=(
+                "2025 est légèrement plus froide que la normale (−0,4 °C en "
+                "moyenne), tandis que 2026 est nettement plus chaude (+0,9 °C "
+                "sur janvier-août, jusqu'à +2,7 °C en août). Le Pacifique "
+                "bascule : un épisode El Niño se met en place en 2026."
+            ),
+            hint="Anomalie = valeur mesurée moins normale 1991-2020 du même mois.",
+            chart="figure",
+            minutes=7,
+        ),
+        Step(
+            title="Replacer dans l'histoire récente",
+            instruction=(
+                "Compare l'anomalie de l'hiver 2023-2024 (+1,8 °C) à celle de "
+                "2026 : que partagent ces deux épisodes ?"
+            ),
+            expected=(
+                "Les deux sont des El Niño : l'hiver 2023-2024 affichait "
+                "+1,8 °C d'anomalie moyenne (jusqu'à +2,0 °C en décembre), et "
+                "2026 repart sur la même trajectoire. Entre les deux, 2024-2025 "
+                "reste proche de zéro : El Niño alterne avec des années neutres "
+                "ou froides (La Niña), il ne dure jamais."
+            ),
+            hint="Un hiver El Niño dépasse durablement +0,5 °C d'anomalie.",
+            chart="figure",
+            minutes=7,
+        ),
+        Step(
+            title="Expliquer l'origine",
+            instruction=(
+                "D'où vient la chaleur qui réchauffe tout le Pacifique "
+                "équatorial ?"
+            ),
+            expected=(
+                "En temps normal, les alizés poussent l'eau chaude de surface "
+                "vers l'ouest (Indonésie) et font remonter l'eau froide des "
+                "profondeurs au large du Pérou. Quand les alizés faiblissent, "
+                "l'eau chaude reflue vers l'est, la remontée d'eau froide "
+                "s'arrête, et la surface se réchauffe sur des milliers de "
+                "kilomètres : c'est El Niño, et son origine est un vent qui "
+                "faiblit."
+            ),
+            hint="Que se passe-t-il au Pérou si l'eau chaude de l'ouest revient vers l'est ?",
+            chart="figure",
             minutes=8,
         ),
     ),
@@ -1197,6 +1400,8 @@ ACTIVITIES: list[Activity] = [
     PLUIES_EUROPE,
     REGIMES_MONDE,
     PORTRAIT_CLIMAT,
+    VENTS_COURANTS,
+    ELNINO,
 ]
 # NOTE : l'activité CANICULE (jours de chaleur, données journalières) est
 # temporairement retirée du catalogue en attendant la préparation des données
