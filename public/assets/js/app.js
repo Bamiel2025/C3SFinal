@@ -101,6 +101,11 @@
     return out;
   }
 
+  function coverage() {
+    const c = state.config;
+    return c && c.years ? c.years : [1940, 2024];
+  }
+
   function badgeFor(payload) {
     if (!payload || !payload.meta) return "";
     const meta = payload.meta;
@@ -283,6 +288,7 @@
   async function renderExplorer(main) {
     const ex = state.explorer;
     const places = state.places;
+    const cov = coverage();
 
     main.innerHTML = `
       <div class="section-head">
@@ -307,10 +313,10 @@
           <div class="field">
             <span class="field-label">Période</span>
             <div class="row">
-              <div><select id="start-year">${yearsOptions(1940, 2024, ex.start)}</select></div>
-              <div><select id="end-year">${yearsOptions(1940, 2024, ex.end)}</select></div>
+              <div><select id="start-year">${yearsOptions(cov[0], cov[1], ex.start)}</select></div>
+              <div><select id="end-year">${yearsOptions(cov[0], cov[1], ex.end)}</select></div>
             </div>
-            <span class="hint">Couverture complète des fichiers : 1940–2024.</span>
+            <span class="hint">Couverture complète des fichiers : ${cov[0]}–${cov[1]}.</span>
           </div>
 
           <div class="field">
@@ -341,25 +347,25 @@
             <div class="field">
               <span class="field-label">Période A</span>
               <div class="row">
-                <div><select id="pa0">${yearsOptions(1940, 2024, ex.periodA[0])}</select></div>
-                <div><select id="pa1">${yearsOptions(1940, 2024, ex.periodA[1])}</select></div>
+                <div><select id="pa0">${yearsOptions(cov[0], cov[1], ex.periodA[0])}</select></div>
+                <div><select id="pa1">${yearsOptions(cov[0], cov[1], ex.periodA[1])}</select></div>
               </div>
             </div>
             <div class="field">
               <span class="field-label">Période B</span>
               <div class="row">
-                <div><select id="pb0">${yearsOptions(1940, 2024, ex.periodB[0])}</select></div>
-                <div><select id="pb1">${yearsOptions(1940, 2024, ex.periodB[1])}</select></div>
+                <div><select id="pb0">${yearsOptions(cov[0], cov[1], ex.periodB[0])}</select></div>
+                <div><select id="pb1">${yearsOptions(cov[0], cov[1], ex.periodB[1])}</select></div>
               </div>
             </div>
             <span class="hint">Les deux périodes sont chargées automatiquement,
-            au besoin sur toute la couverture 1940–2024.</span>
+            au besoin sur toute la couverture ${cov[0]}–${cov[1]}.</span>
           </div>
 
           <div class="stack">
             <button class="btn btn-block" id="btn-refresh">Actualiser</button>
             <button class="btn btn-ghost btn-block" id="btn-cds">Requêter le CDS maintenant</button>
-            <button class="btn btn-ghost btn-block" id="btn-full">Période complète 1940–2024</button>
+            <button class="btn btn-ghost btn-block" id="btn-full">Période complète ${cov[0]}–${cov[1]}</button>
           </div>
         </aside>
 
@@ -496,8 +502,9 @@
 
     el("btn-refresh").addEventListener("click", () => loadExplorerData());
     el("btn-full").addEventListener("click", () => {
-      ex.start = 1940; ex.end = 2024;
-      el("start-year").value = 1940; el("end-year").value = 2024;
+      const cov = coverage();
+      ex.start = cov[0]; ex.end = cov[1];
+      el("start-year").value = cov[0]; el("end-year").value = cov[1];
       loadExplorerData();
     });
     el("btn-cds").addEventListener("click", async () => {
@@ -553,8 +560,8 @@
         start = Math.min(start, ex.periodA[0], ex.periodB[0]);
         end = Math.max(end, ex.periodA[1], ex.periodB[1]);
       }
-      start = Math.max(1940, start);
-      end = Math.min(2024, end);
+      start = Math.max(coverage()[0], start);
+      end = Math.min(coverage()[1], end);
 
       const params = {
         cities: ex.cities.join(","),
@@ -822,19 +829,29 @@
       return;
     }
 
-    const charts = act.steps.map(s => s.chart).filter(c => c && c !== "none");
+    const charts = [];
+    act.steps.forEach(s => {
+      [s.chart, s.chart2].forEach(c => { if (c && c !== "none") charts.push(c); });
+    });
     const needMap = charts.includes("map");
     const needHeat = charts.includes("heat");
     let mapPayload = null;
     let heatPayload = null;
+    const mapCache = {};
 
     if (needMap) {
-      const maps = (state.places.maps || []);
-      const wanted = act.key === "vent_pression" ? "mslp_janvier" : "t2m_janvier";
-      const target = maps.find(m => m.id === wanted) || maps[0];
-      if (target) {
-        try { mapPayload = await api("api/maps/" + target.id); } catch (e) { mapPayload = null; }
+      const fallback = act.key === "vent_pression" ? "mslp_janvier" : "t2m_janvier";
+      const ids = [];
+      act.steps.forEach(s => {
+        if (s.chart === "map") ids.push(s.map_id || fallback);
+        if (s.chart2 === "map" && s.map2_id) ids.push(s.map2_id);
+      });
+      for (const id of [...new Set(ids)]) {
+        if (!id) continue;
+        try { mapCache[id] = await api("api/maps/" + id); } catch (e) { /* carte absente */ }
       }
+      const first = ids.find(id => mapCache[id]);
+      mapPayload = first ? mapCache[first] : null;
     }
     if (needHeat) {
       try {
@@ -891,6 +908,14 @@
             <div id="activity-chart" class="chart"><div class="chart-empty">Chargement…</div></div>
             <div class="chart-legend" id="activity-legend"></div>
             <div id="activity-chart-note" class="small muted"></div>
+            <div id="chart2-block" hidden style="border-top:1px solid rgba(148,163,184,.35);margin-top:.8rem;padding-top:.7rem">
+              <div class="panel-title">
+                <div><h3 id="chart2-title" style="font-size:1rem">Second document</h3></div>
+                <span class="badge badge-cds">second document</span>
+              </div>
+              <div id="activity-chart2" class="chart"><div class="chart-empty">Chargement…</div></div>
+              <div id="activity-chart2-note" class="small muted"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -922,7 +947,7 @@
       drawExamFigures(act);
     }
 
-    const ctx = { act, mapPayload, heatPayload, current: 1 };
+    const ctx = { act, mapPayload, mapCache, heatPayload, current: 1 };
     window.__c3sActivity = ctx;
 
     document.querySelectorAll("#steps-col .step").forEach((node) => {
@@ -1073,7 +1098,7 @@
           <span class="step-num">${n}</span>
           <h3>${esc(step.title)}</h3>
           <span class="badge">${step.minutes} min</span>
-          <span class="badge badge-cds">${esc(chartLabel(step.chart))}</span>
+          <span class="badge badge-cds">${esc(stepBadge(step))}</span>
         </div>
         <p class="step-question">${esc(step.instruction)}</p>
         <div class="step-tools">
@@ -1111,6 +1136,15 @@
     }[chart] || chart;
   }
 
+  function stepBadge(step) {
+    const main = chartLabel(step.chart);
+    if (!step.chart2) return main;
+    const second = step.chart2 === "schema" && (step.file2 || "").indexOf("rayons") >= 0
+      ? "schéma des rayons"
+      : chartLabel(step.chart2);
+    return main + " + " + second;
+  }
+
   async function setActiveStep(n) {
     const ctx = window.__c3sActivity;
     if (!ctx) return;
@@ -1127,6 +1161,7 @@
     html("chart-step", "étape " + n);
     html("chart-title", chartLabel(step.chart));
     await drawActivityChart(step);
+    await drawSecondDoc(step);
   }
 
   async function drawActivityChart(step) {
@@ -1143,15 +1178,16 @@
     }
 
     if (step.chart === "map") {
-      if (!ctx.mapPayload) {
+      const payload = (step.map_id && ctx.mapCache && ctx.mapCache[step.map_id]) || ctx.mapPayload;
+      if (!payload) {
         Charts.emptyState(target, "Carte indisponible.",
           "Lancez la préparation : <code>python scripts/prepare_maps.py</code>");
         return;
       }
-      html("chart-title", ctx.mapPayload.title || "Carte climatique");
-      Charts.map(target, ctx.mapPayload);
-      html("activity-legend", Charts.notes.map(ctx.mapPayload));
-      html("activity-chart-note", ctx.mapPayload.source || "");
+      html("chart-title", payload.title || "Carte climatique");
+      Charts.map(target, payload);
+      html("activity-legend", Charts.notes.map(payload));
+      html("activity-chart-note", payload.source || "");
       return;
     }
 
@@ -1254,6 +1290,75 @@
     } catch (err) {
       Charts.emptyState(target, "Graphique indisponible.", esc(err.message));
     }
+  }
+
+  async function drawSecondDoc(step) {
+    const ctx = window.__c3sActivity;
+    const block = document.getElementById("chart2-block");
+    if (!block) return;
+    if (!step.chart2) { block.hidden = true; return; }
+    block.hidden = false;
+    html("activity-chart2-note", "");
+    const act = ctx.act;
+    const cities = act.cities.length ? act.cities : state.explorer.cities;
+    const target = "#activity-chart2";
+
+    if (step.chart2 === "map") {
+      const payload = ctx.mapCache && ctx.mapCache[step.map2_id];
+      html("chart2-title", payload ? payload.title : "Carte climatique");
+      if (!payload) { Charts.emptyState(target, "Carte indisponible."); return; }
+      Charts.map(target, payload);
+      html("activity-chart2-note", payload.source || "");
+      return;
+    }
+
+    if (step.chart2 === "schema") {
+      const file = step.file2 || "courants_atlantique.png";
+      html("chart2-title", file.indexOf("rayons") >= 0
+        ? "Réception du rayonnement selon la latitude — schéma"
+        : "Schéma pédagogique");
+      html("activity-chart2",
+        '<img src="assets/schemas/' + esc(file) + '" alt="Schéma pédagogique" class="situation" ' +
+        'onerror="this.outerHTML=\'<p class=&quot;small muted&quot;>Schéma indisponible.</p>\'">');
+      html("activity-chart2-note", "Schéma pédagogique simplifié (pas une donnée CDS).");
+      return;
+    }
+
+    if (step.chart2 === "annual") {
+      html("chart2-title", cap(chartLabel("annual")) + " — " + cities[0]);
+      try {
+        const long = await api("api/series" + queryString({
+          cities: cities.slice(0, 2).join(","), variable: "2m_temperature",
+          start: 1940, end: 2024, source: "auto"
+        }));
+        Charts.annual(target, long);
+        html("activity-chart2-note", "Moyennes annuelles 1940-2024 et tendance (régression linéaire).");
+      } catch (err) {
+        Charts.emptyState(target, "Graphique indisponible.", esc(err.message));
+      }
+      return;
+    }
+
+    if (step.chart2 === "ombro") {
+      html("chart2-title", cap(chartLabel("ombro")) + " — " + cities.slice(0, 3).join(", "));
+      try {
+        const temp = await api("api/series" + queryString({
+          cities: cities.slice(0, 3).join(","), variable: "2m_temperature",
+          start: 1991, end: 2020, source: "auto"
+        }));
+        const precip = await api("api/series" + queryString({
+          cities: cities.slice(0, 3).join(","), variable: "total_precipitation",
+          start: 1991, end: 2020, source: "auto"
+        }));
+        Charts.ombro(target, { meta: temp.meta, stats: temp.stats, precip });
+        html("activity-chart2-note", "Normale 1991-2020 · barres = cumul mensuel, courbe = température, pointillés = 2×T (aridité).");
+      } catch (err) {
+        Charts.emptyState(target, "Graphique indisponible.", esc(err.message));
+      }
+      return;
+    }
+
+    Charts.emptyState(target, "Second document indisponible.");
   }
 
   async function loadHeat(force) {
@@ -1455,7 +1560,7 @@
           <div class="card-title"><h3>Trois sources de données</h3></div>
           <div class="stack">
             <div class="callout callout-ok"><h4>1. Fichiers pré-calculés</h4>
-              <p class="small">Séries mensuelles de 1940 à 2024, lues depuis <code>data/precomputed/</code>.
+              <p class="small">Séries mensuelles de ${cfg.years[0]} à ${cfg.years[1]}, lues depuis <code>data/precomputed/</code>.
               Instantané, gratuit, hors ligne.</p></div>
             <div class="callout"><h4>2. Requête CDS en direct</h4>
               <p class="small">L'application construit la requête ERA5, la soumet, lit le NetCDF

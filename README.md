@@ -6,7 +6,8 @@ JavaScript sans Streamlit : graphiques interactifs, cartes, et **12 activités
 séquencées en une question par étape**, corrigées avec les valeurs mesurées.
 
 - Données : ERA5, moyennes mensuelles **1991-2020** (normale OMM), série
-  continue **1940-2024**.
+  continue **1940-2026** (2026 partielle : relevés jusqu'à août ; les activités
+  restent calées sur 1940-2024).
 - Langue de l'interface : français.
 - Attribution obligatoire : *Generated using Copernicus Climate Change Service
   information 2024 (C3S/CAMS)* — elle est affichée dans l'application.
@@ -17,7 +18,7 @@ séquencées en une question par étape**, corrigées avec les valeurs mesurées
 | --- | --- |
 | **Accueil** | Page simple pour les élèves : présentation, 3 chiffres clés, accès rapide. Aucune information technique. |
 | **Explorateur** | Climatogramme, diagramme ombrothermique, série annuelle + tendance, anomalies, comparaison de deux périodes de 30 ans, pour 31 villes et 6 variables. |
-| **Activités** | 12 fiches séquencées en **4 étapes**, chacune ouverte par une **consigne unique** (verbe d'action + livrable), avec piste, durée et graphique associé. Les corrigés ne s'affichent qu'avec le **code enseignant**. La fiche *jours de chaleur* (données journalières) est suspendue en attendant `scripts/prepare_data.py heat`. |
+| **Activités** | 12 fiches séquencées en **4 étapes**, chacune ouverte par une **consigne unique** (verbe d'action + livrable), avec piste, durée et **deux documents à interprimer** (graphique principal + carte, schéma ou second graphique sur les étapes 3-4). Les corrigés ne s'affichent qu'avec le **code enseignant**. La fiche *jours de chaleur* (données journalières) est suspendue en attendant `scripts/prepare_data.py heat`. |
 | **Sujet type brevet** | Les activités *Paris se réchauffe-t-il vraiment ?* et *El Niño* comportent en plus un **sujet type DNB** : contexte, 3 documents (graphiques, tableaux), 4 questions de difficulté croissante pour **16 points en 25 min**, corrigés verrouillés. |
 | **Cartes** | 6 cartes statiques ERA5 (température janvier/juillet, précipitations janvier/juillet, pression janvier, vent + flèches). |
 | **Aide · prof** | Réservée au professeur (**code enseignant requis**) : sources, unités, état des fichiers pré-calculés, diagnostic de la clé CDS. |
@@ -109,7 +110,9 @@ graphiques et cartes inclus — aucune connexion requise une fois le fichier
 téléchargé) :
 
 - `index.html` — sommaire des 12 fiches ;
-- `<clé>.html` — fiche élève : questions, pistes, graphiques et cartes ;
+- `<clé>.html` — fiche élève : questions, pistes, graphiques et cartes
+  (chaque activité propose **deux documents à interpréter**, le second
+  affiché sous le graphique principal aux étapes 3-4) ;
 - `pdf/<clé>.pdf` — version imprimable élève (sans corrigé) ;
 - `pdf/<clé>-corrige.pdf` — version enseignant (corrigés inclus).
 

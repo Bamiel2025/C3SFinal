@@ -19,6 +19,8 @@ Charte de rédaction appliquée à **toutes** les étapes (48 consignes) :
 
 Chaque étape expose `expected` (corrigé), `hint` (piste) et `chart`
 (l'affichage à projeter), afin que la fiche et la donnée restent indissociables.
+Les étapes 3 et 4 portent en outre un **second document** (`chart2`) distinct du
+premier : chaque activité fait donc interpréter au moins deux documents.
 Les activités `rechauffement` et `elnino` portent en plus un `exam` : un sujet
 type brevet (contexte, documents numérotés, questions de difficulté croissante).
 """
@@ -41,6 +43,15 @@ class Step:
     chart: str = "climato"
     #: Durée indicative de l'étape, en minutes.
     minutes: int = 5
+    #: Identifiant de carte (`public/assets/maps`) quand `chart == "map"`.
+    map_id: str = ""
+    #: Second document à interpréter sur cette étape ("" = aucun).
+    chart2: str = ""
+    #: Carte du second document, quand `chart2 == "map"`.
+    map2_id: str = ""
+    #: Fichier du second document, quand `chart2` est `schema` ou `figure`
+    #: (sous `public/assets/schemas/` ou `public/assets/figures/`).
+    file2: str = ""
 
 
 @dataclass
@@ -219,6 +230,10 @@ class Activity:
                 "chart": step.chart,
                 "minutes": step.minutes,
                 "hint": step.hint,
+                "map_id": step.map_id,
+                "chart2": step.chart2,
+                "map2_id": step.map2_id,
+                "file2": step.file2,
             }
             if with_answers:
                 item["expected"] = step.expected
@@ -314,7 +329,8 @@ OCEAN_CONTINENT = Activity(
             instruction=(
                 "Explique en deux phrases pourquoi Brest et Strasbourg, presque à "
                 "la même latitude, ont des amplitudes thermiques si différentes : "
-                "cite le mécanisme physique en cause."
+                "appuie-toi sur la normale mensuelle puis sur la carte de janvier, "
+                "et cite le mécanisme physique en cause."
             ),
             expected=(
                 "L'eau se réchauffe et se refroidit beaucoup plus lentement que la "
@@ -324,14 +340,17 @@ OCEAN_CONTINENT = Activity(
             ),
             hint="Comparez le temps nécessaire pour chauffer un litre d'eau et une pierre de même masse.",
             chart="climato",
+            chart2="map",
+            map2_id="t2m_janvier",
             minutes=8,
         ),
         Step(
             title="Prévoir puis vérifier",
             instruction=(
                 "Prédis l'amplitude thermique de Marseille avant de la faire "
-                "afficher, puis vérifie ta prédiction avec les données : se "
-                "trouve-t-elle bien entre celles de Brest et de Strasbourg ?"
+                "afficher, puis vérifie ta prédiction avec la normale mensuelle "
+                "et la carte de janvier : se trouve-t-elle bien entre celles de "
+                "Brest et de Strasbourg ?"
             ),
             expected=(
                 "Une amplitude de l'ordre de 14 à 15 °C, soit bien plus qu'à Brest : "
@@ -341,6 +360,8 @@ OCEAN_CONTINENT = Activity(
             ),
             hint="Marseille est en bord de mer, mais à 43° N : son été est bien plus chaud que celui de Brest.",
             chart="climato",
+            chart2="map",
+            map2_id="t2m_janvier",
             minutes=5,
         ),
     ),
@@ -411,8 +432,8 @@ CYCLE_EAU = Activity(
             title="Comparer les totaux",
             instruction=(
                 "Additionne les douze cumuls mensuels de Marseille, puis ceux de "
-                "Dakar : laquelle des deux villes reçoit le plus d'eau sur une "
-                "année ?"
+                "Dakar, et replace tes totaux sur la carte des pluies de juillet : "
+                "laquelle des deux villes reçoit le plus d'eau sur une année ?"
             ),
             expected=(
                 "Marseille : environ 600 mm par an, contre seulement 280 mm à "
@@ -423,14 +444,17 @@ CYCLE_EAU = Activity(
             ),
             hint="Cumul annuel = somme des douze cumuls mensuels.",
             chart="ombro",
+            chart2="map",
+            map2_id="tp_juillet",
             minutes=6,
         ),
         Step(
             title="Expliquer la saison des pluies",
             instruction=(
                 "Explique pourquoi Dakar reçoit l'essentiel de ses pluies de "
-                "juillet à septembre alors que Marseille reste sèche en été : "
-                "mobilise évaporation, condensation et ascendance de l'air."
+                "juillet à septembre alors que Marseille reste sèche en été, en "
+                "te servant de la carte des pluies de juillet : mobilise "
+                "évaporation, condensation et ascendance de l'air."
             ),
             expected=(
                 "En juillet-septembre, l'été boréal réchauffe l'Atlantique "
@@ -443,6 +467,8 @@ CYCLE_EAU = Activity(
             ),
             hint="Reliez les mots « évaporation », « condensation » et « ascendance » aux deux villes.",
             chart="ombro",
+            chart2="map",
+            map2_id="tp_juillet",
             minutes=8,
         ),
     ),
@@ -781,6 +807,7 @@ CARTES = Activity(
             ),
             hint="Cherchez la couleur la plus froide du dégradé, puis situez-la sur la carte.",
             chart="map",
+            map_id="t2m_janvier",
             minutes=6,
         ),
         Step(
@@ -797,6 +824,7 @@ CARTES = Activity(
             ),
             hint="Comparez la même zone sur les deux cartes et notez les deux valeurs.",
             chart="map",
+            map_id="t2m_juillet",
             minutes=7,
         ),
         Step(
@@ -814,6 +842,7 @@ CARTES = Activity(
             ),
             hint="Posez la question inverse : que voit-on si chaque cran vaut 10 °C ?",
             chart="map",
+            map_id="t2m_juillet",
             minutes=6,
         ),
         Step(
@@ -830,6 +859,7 @@ CARTES = Activity(
             ),
             hint="Combien d'années l'OMM utilise-t-elle pour définir une normale climatique ?",
             chart="map",
+            map_id="t2m_janvier",
             minutes=5,
         ),
     ),
@@ -881,6 +911,7 @@ VENT_PRESSION = Activity(
             ),
             hint="La valeur se lit sur la légende de la carte, entre les deux extrêmes.",
             chart="map",
+            map_id="mslp_janvier",
             minutes=4,
         ),
         Step(
@@ -899,6 +930,7 @@ VENT_PRESSION = Activity(
             ),
             hint="Les hautes pressions portent des couleurs chaudes, les basses des couleurs froides.",
             chart="map",
+            map_id="mslp_janvier",
             minutes=6,
         ),
         Step(
@@ -915,6 +947,7 @@ VENT_PRESSION = Activity(
             ),
             hint="Retournez le raisonnement : que se passerait-il si la pression était partout identique ?",
             chart="map",
+            map_id="vent_janvier",
             minutes=7,
         ),
         Step(
@@ -934,6 +967,7 @@ VENT_PRESSION = Activity(
             ),
             hint="Suivez une flèche placée sur une isobare et observez son angle avec celle-ci.",
             chart="map",
+            map_id="vent_janvier",
             minutes=7,
         ),
     ),
@@ -1005,8 +1039,9 @@ LATITUDE = Activity(
             title="Identifier la surprise",
             instruction=(
                 "Relève les températures de janvier à Reykjavik et à "
-                "Longyearbyen, puis compare-les à leurs latitudes : l'écart de "
-                "température est-il proportionnel à l'écart de latitude ?"
+                "Longyearbyen, puis compare-les à leurs latitudes à l'aide du "
+                "schéma des rayons : l'écart de température est-il proportionnel "
+                "à l'écart de latitude ?"
             ),
             expected=(
                 "Reykjavik (64° N) affiche −0,3 °C en janvier, alors que la "
@@ -1018,13 +1053,16 @@ LATITUDE = Activity(
             ),
             hint="Compare sa latitude à celle de Longyearbyen, qui pourtant n'est pas beaucoup plus au nord.",
             chart="climato",
+            chart2="schema",
+            file2="rayons_solaires.png",
             minutes=7,
         ),
         Step(
             title="Formuler le mécanisme",
             instruction=(
-                "Explique en deux phrases pourquoi on reçoit moins d'énergie "
-                "solaire quand la latitude augmente."
+                "Explique en deux phrases, à partir du schéma des rayons, "
+                "pourquoi on reçoit moins d'énergie solaire quand la latitude "
+                "augmente."
             ),
             expected=(
                 "Plus on approche des pôles, plus les rayons arrivent de biais : "
@@ -1034,6 +1072,8 @@ LATITUDE = Activity(
             ),
             hint="Imagine un faisceau de lampe torche dirigé droit puis incliné sur le sol.",
             chart="climato",
+            chart2="schema",
+            file2="rayons_solaires.png",
             minutes=8,
         ),
     ),
@@ -1104,7 +1144,8 @@ AVANT_APRES = Activity(
         Step(
             title="Regarder le détail mensuel",
             instruction=(
-                "Compare l'écart des deux périodes mois par mois : est-il le même "
+                "Compare l'écart des deux périodes mois par mois, sur le "
+                "graphique mensuel puis sur la série annuelle : est-il le même "
                 "en janvier, en juillet et en septembre ?"
             ),
             expected=(
@@ -1116,13 +1157,15 @@ AVANT_APRES = Activity(
             ),
             hint="Compare les deux barres du même mois dans le graphique mensuel.",
             chart="compare",
+            chart2="annual",
             minutes=7,
         ),
         Step(
             title="Conclure",
             instruction=(
                 "Rédige une conclusion qui cite les deux périodes comparées, la "
-                "valeur de l'écart moyen et le signe de cet écart."
+                "valeur de l'écart moyen et le signe de cet écart, en te "
+                "servant de la série annuelle."
             ),
             expected=(
                 "Exemple attendu : « À Paris, la température moyenne passe de "
@@ -1134,6 +1177,7 @@ AVANT_APRES = Activity(
             ),
             hint="Une bonne conclusion cite les deux périodes, la valeur de l'écart et son unité.",
             chart="compare",
+            chart2="annual",
             minutes=7,
         ),
     ),
@@ -1216,6 +1260,7 @@ CANICULE = Activity(
             ),
             hint="Une journée sans repos nocturne est plus dangereuse qu'un pic diurne isolé.",
             chart="heat",
+            chart2="climato",
             minutes=7,
         ),
         Step(
@@ -1232,6 +1277,7 @@ CANICULE = Activity(
             ),
             hint="Un indicateur qu'on ne peut pas comparer n'est pas un indicateur.",
             chart="heat",
+            chart2="climato",
             minutes=6,
         ),
     ),
@@ -1284,6 +1330,7 @@ PLUIES_EUROPE = Activity(
             ),
             hint="Rapport = grande valeur divisée par petite valeur.",
             chart="map",
+            map_id="tp_janvier",
             minutes=5,
         ),
         Step(
@@ -1303,6 +1350,7 @@ PLUIES_EUROPE = Activity(
             ),
             hint="Baisse en mm = janvier − juillet ; en proportion = baisse ÷ janvier.",
             chart="map",
+            map_id="tp_juillet",
             minutes=7,
         ),
         Step(
@@ -1323,6 +1371,7 @@ PLUIES_EUROPE = Activity(
             ),
             hint="Compare aussi janvier et juillet sur les Alpes (139 contre 153 mm).",
             chart="map",
+            map_id="tp_juillet",
             minutes=7,
         ),
         Step(
@@ -1343,6 +1392,7 @@ PLUIES_EUROPE = Activity(
             ),
             hint="Relie « flux d'ouest », « relief » et « air stable » aux trois régions.",
             chart="map",
+            map_id="tp_janvier",
             minutes=8,
         ),
     ),
@@ -1415,7 +1465,8 @@ REGIMES_MONDE = Activity(
             instruction=(
                 "Range les trois villes par latitude croissante, puis relie "
                 "chacune de leurs amplitudes à sa latitude et à sa moyenne "
-                "annuelle : que remarques-tu ?"
+                "annuelle, en confrontant la normale mensuelle et le diagramme "
+                "ombrothermique : que remarques-tu ?"
             ),
             expected=(
                 "L'amplitude croît avec la latitude pendant que la moyenne "
@@ -1426,12 +1477,14 @@ REGIMES_MONDE = Activity(
             ),
             hint="Range les trois villes par latitude croissante et regarde les deux colonnes.",
             chart="climato",
+            chart2="ombro",
             minutes=7,
         ),
         Step(
             title="Expliquer",
             instruction=(
-                "Explique pourquoi l'amplitude thermique de Singapour est presque "
+                "Explique, en te servant du diagramme ombrothermique des trois "
+                "villes, pourquoi l'amplitude thermique de Singapour est presque "
                 "dix fois plus faible que celle de Longyearbyen."
             ),
             expected=(
@@ -1443,6 +1496,7 @@ REGIMES_MONDE = Activity(
             ),
             hint="Pense à la hauteur du Soleil à midi en janvier et en juillet dans chaque ville.",
             chart="climato",
+            chart2="ombro",
             minutes=8,
         ),
     ),

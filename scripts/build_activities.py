@@ -38,6 +38,7 @@ import base64
 import html as htmlmod
 import io
 import json
+import math
 import sys
 from pathlib import Path
 from urllib.parse import quote
@@ -51,6 +52,7 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 from matplotlib.colors import LinearSegmentedColormap  # noqa: E402
 from matplotlib.patches import Polygon as MplPolygon  # noqa: E402
+from matplotlib.ticker import FuncFormatter, MultipleLocator  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -65,6 +67,8 @@ MONTHS = [
     "juil.", "août", "sept.", "oct.", "nov.", "déc.",
 ]
 CITY_COLORS = ["#e07a5f", "#4c7fd1", "#2a9d8f", "#7a5cc2", "#f2a541", "#d64545"]
+SEA_COLOR = "#d7e8f6"
+LAND_COLOR = "#f5f1e3"
 
 PALETTES = {
     "temperature": [(0, "#31688e"), (0.25, "#35b779"), (0.5, "#f9d34a"), (0.75, "#f2863c"), (1, "#c2312b")],
@@ -147,6 +151,33 @@ def land_polys() -> list[list[tuple[float, float]]]:
     return _LAND
 
 
+_COUNTRIES: list[list[tuple[float, float]]] | None = None
+
+
+def country_rings() -> list[list[tuple[float, float]]]:
+    """Contours des pays (frontières terrestres, Natural Earth 110 m)."""
+    global _COUNTRIES
+    if _COUNTRIES is None:
+        path = ROOT / "data" / "maps" / "ne_110m_admin_0_countries.geojson"
+        gj = json.loads(path.read_text(encoding="utf-8"))
+        rings: list[list[tuple[float, float]]] = []
+        for feat in gj.get("features", []):
+            geom = feat.get("geometry") or {}
+            kind = geom.get("type")
+            coords = geom.get("coordinates") or []
+            if kind == "Polygon":
+                polygons = [coords]
+            elif kind == "MultiPolygon":
+                polygons = coords
+            else:
+                continue
+            for poly in polygons:
+                for ring in poly:
+                    rings.append([(float(x), float(y)) for x, y in ring])
+        _COUNTRIES = rings
+    return _COUNTRIES
+
+
 def city_points(cities: list[str]) -> list[tuple[str, float, float]]:
     """(nom, longitude, latitude) pour les villes connues, dans l'ordre."""
     pts: list[tuple[str, float, float]] = []
@@ -157,46 +188,205 @@ def city_points(cities: list[str]) -> list[tuple[str, float, float]]:
     return pts
 
 
-def draw_land(ax: plt.Axes) -> None:
+def draw_land(ax: plt.Axes, *, borders: bool = True) -> None:
+    """Fond de carte : mer (fond des axes), terres pleines, frontières, côtes."""
+    ax.set_facecolor(SEA_COLOR)
     for ring in land_polys():
-        ax.add_patch(MplPolygon(ring, closed=True, fc="#e3eaf2", ec="#94a3b8", lw=0.5, zorder=1))
+        ax.add_patch(MplPolygon(ring, closed=True, fc=LAND_COLOR, ec="none", zorder=1))
+    if borders:
+        for ring in country_rings():
+            xs = [p[0] for p in ring]
+            ys = [p[1] for p in ring]
+            ax.plot(xs, ys, color="#94a3b8", lw=0.45, zorder=2)
     for line in coastlines():
         ax.plot(
             [p[0] for p in line], [p[1] for p in line],
-            color="#64748b", lw=0.5, zorder=2,
+            color="#64748b", lw=0.7, zorder=3,
         )
+    # Cadre complet : sans lui, la mer se confond avec la page blanche.
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(True)
 
 
-def draw_cities(ax: plt.Axes, pts: list[tuple[str, float, float]], fontsize: int = 10) -> None:
+def _fmt_deg(value: float, kind: str) -> str:
+    txt = f"{abs(value):.1f}".replace(".", ",")
+    if kind == "lat":
+        return f"{txt}°{'N' if value >= 0 else 'S'}"
+    return f"{txt}°{'E' if value >= 0 else 'O'}"
+
+
+def draw_cities(
+    ax: plt.Axes,
+    pts: list[tuple[str, float, float]],
+    fontsize: int = 10,
+    *,
+    with_coords: bool = True,
+) -> None:
+    y0, y1 = ax.get_ylim()
+    dy = (y1 - y0) * 0.075
     for i, (name, x, y) in enumerate(pts):
-        ax.scatter([x], [y], s=100, c=CITY_COLORS[i % len(CITY_COLORS)],
+        ax.scatter([x], [y], s=110, c=CITY_COLORS[i % len(CITY_COLORS)],
                    ec="white", lw=1.5, zorder=5)
         ax.text(
             x, y, "  " + name, fontsize=fontsize, fontweight="bold", color="#1f3a5f",
             va="center", ha="left", zorder=6,
             path_effects=[pe.withStroke(linewidth=3, foreground="white")],
         )
+        if with_coords:
+            ax.text(
+                x, y - dy,
+                f"  {_fmt_deg(y, 'lat')} · {_fmt_deg(x, 'lon')}",
+                fontsize=max(fontsize - 2, 7), color="#475569",
+                va="top", ha="left", zorder=6,
+                path_effects=[pe.withStroke(linewidth=3, foreground="white")],
+            )
+
+
+def _nice_km(target: float) -> int:
+    for step in (5, 10, 20, 50, 100, 200, 300, 500, 1000, 2000, 5000):
+        if step >= target:
+            return step
+    return 5000
+
+
+def _nice_step(span: float, max_labels: int) -> float:
+    """Graduation qui tient en `max_labels` étiquettes sur l'emprise `span`."""
+    raw = span / max(max_labels, 1)
+    for step in (0.2, 0.25, 0.5, 1, 2, 2.5, 5, 10, 15, 20, 30, 45, 90, 180):
+        if step >= raw:
+            return step
+    return 180.0
+
+
+def _fmt_tick(value: float, _pos: int) -> str:
+    """Graduations au format français (virgule décimale)."""
+    return f"{value:g}".replace(".", ",")
+
+
+def _seg_dist(
+    px: float, py: float, x0: float, y0: float, x1: float, y1: float
+) -> float:
+    """Distance (coordonnées normalisées) d'un point à un segment."""
+    dx, dy = x1 - x0, y1 - y0
+    norm = dx * dx + dy * dy
+    if norm == 0:
+        return math.hypot(px - x0, py - y0)
+    t = max(0.0, min(1.0, ((px - x0) * dx + (py - y0) * dy) / norm))
+    return math.hypot(px - (x0 + t * dx), py - (y0 + t * dy))
+
+
+def _place_scale_bar(
+    ax: plt.Axes,
+    x0: float,
+    x1: float,
+    y0: float,
+    y1: float,
+    pts: list[tuple[str, float, float]],
+    coslat: float,
+) -> None:
+    """Échelle graphique en km, dans un angle sans ville à proximité."""
+    span_x, span_y = x1 - x0, y1 - y0
+    bar_km = _nice_km(span_x * 111.32 * coslat * 0.3)
+    bar_deg = bar_km / (111.32 * coslat)
+    frac = min(bar_deg / span_x, 0.5)
+    margin_x, margin_y = 0.06, 0.10
+    corners = [
+        ("left", "bottom"),
+        ("right", "bottom"),
+        ("left", "top"),
+        ("right", "top"),
+    ]
+    best: tuple[float, float, float, str] | None = None
+    for side, vert in corners:
+        fx = margin_x if side == "left" else 1.0 - margin_x - frac
+        fy = margin_y if vert == "bottom" else 1.0 - margin_y
+        bx, by = x0 + fx * span_x, y0 + fy * span_y
+        cx0, cx1 = fx, fx + frac
+        cy = fy + (0.05 if vert == "bottom" else -0.05)
+        dist = min(
+            (
+                _seg_dist((px - x0) / span_x, (py - y0) / span_y, cx0, cy, cx1, cy)
+                for _, px, py in pts
+            ),
+            default=9.0,
+        )
+        if dist >= 0.30:
+            best = (dist, bx, by, vert)
+            break
+        if best is None or dist > best[0]:
+            best = (dist, bx, by, vert)
+    if best is None:
+        return
+    _, bx, by, vert = best
+    ax.plot([bx, bx + bar_deg], [by, by], color="#1f3a5f", lw=2.5,
+            solid_capstyle="butt", zorder=7)
+    label_dy = span_y * 0.035
+    ax.text(
+        bx + bar_deg / 2,
+        by + (label_dy if vert == "bottom" else -label_dy),
+        f"{bar_km} km",
+        ha="center",
+        va="bottom" if vert == "bottom" else "top",
+        fontsize=9,
+        color="#1f3a5f",
+        zorder=7,
+        path_effects=[pe.withStroke(linewidth=3, foreground="white")],
+    )
 
 
 def fig_situation(cities: list[str]) -> tuple[str, str]:
-    """Carte de situation des villes (emprise calculée automatiquement)."""
+    """Carte de situation des villes, à l'échelle (proportion corrigée).
+
+    Améliorations pédagogiques : proportions corrigées à la latitude moyenne,
+    frontières des pays, graduations de latitudes/longitudes, coordonnées de
+    chaque ville et échelle graphique en kilomètres.
+    """
     pts = city_points(cities)
     if not pts:
         raise KeyError(f"Aucune ville connue parmi : {cities}")
     lons = [x for _, x, _ in pts]
     lats = [y for _, _, y in pts]
-    dx = max(max(lons) - min(lons), 0.1)
-    dy = max(max(lats) - min(lats), 0.1)
-    x0, x1 = min(lons) - dx * 0.35 - 3, max(lons) + dx * 0.35 + 3
-    y0, y1 = max(min(lats) - dy * 0.4 - 2.5, -60), min(max(lats) + dy * 0.4 + 2.5, 84)
-    fig, ax = plt.subplots(figsize=(8.6, 4.1))
-    draw_land(ax)
-    draw_cities(ax, pts)
+    mid_lat = sum(lats) / len(lats)
+    coslat = max(math.cos(math.radians(mid_lat)), 0.25)
+
+    span_lon = max(max(lons) - min(lons), 4.0)
+    span_lat = max(max(lats) - min(lats), 3.0)
+    span_km = math.hypot(span_lon * 111.32 * coslat, span_lat * 111.32)
+    pad_km = max(70.0, 0.14 * span_km)
+    pad_lon = pad_km / (111.32 * coslat)
+    pad_lat = pad_km / 111.32
+
+    x0 = min(lons) - pad_lon
+    x1 = max(lons) + pad_lon
+    y0 = max(min(lats) - pad_lat, -60.0)
+    y1 = min(max(lats) + pad_lat, 84.0)
+
+    ratio = ((y1 - y0) / (x1 - x0)) / coslat
+    width = 8.6
+    height = width * ratio
+    if height > 6.2:
+        height, width = 6.2, 6.2 / ratio
+    elif height < 3.2:
+        height, width = 3.2, 3.2 / ratio
+
+    fig, ax = plt.subplots(figsize=(width, height))
     ax.set_xlim(x0, x1)
     ax.set_ylim(y0, y1)
-    ax.set_xlabel("Longitude (°E)")
-    ax.set_ylabel("Latitude (°N)")
+    ax.set_aspect(1.0 / coslat)
+    draw_land(ax)
+    draw_cities(ax, pts)
+
+    span_x, span_y = x1 - x0, y1 - y0
+    ax.xaxis.set_major_locator(MultipleLocator(_nice_step(span_x, 8)))
+    ax.yaxis.set_major_locator(MultipleLocator(_nice_step(span_y, 8)))
+    ax.xaxis.set_major_formatter(FuncFormatter(_fmt_tick))
+    ax.yaxis.set_major_formatter(FuncFormatter(_fmt_tick))
+    ax.grid(True, which="major", color="#94a3b8", lw=0.6, alpha=0.7, ls=(0, (4, 3)))
+    ax.set_axisbelow(True)
+    ax.set_xlabel("Longitude")
+    ax.set_ylabel("Latitude")
     ax.set_title("Situation — " + ", ".join(cities), pad=10)
+    _place_scale_bar(ax, x0, x1, y0, y1, pts, coslat)
     return "png", _as_png(fig)
 
 
@@ -209,7 +399,7 @@ def fig_courants() -> tuple[str, str]:
     """
     fig, ax = plt.subplots(figsize=(9.0, 5.6))
     draw_land(ax)
-    draw_cities(ax, city_points(["Bordeaux", "Montréal"]))
+    draw_cities(ax, city_points(["Bordeaux", "Montréal"]), with_coords=False)
 
     def arrow(path: list[tuple[float, float]], color: str, width: float = 2.6) -> None:
         for (x0, y0), (x1, y1) in zip(path[:-1], path[1:]):
@@ -241,6 +431,69 @@ def fig_courants() -> tuple[str, str]:
     ax.set_xlabel("Longitude (°E)")
     ax.set_ylabel("Latitude (°N)")
     ax.set_title("Courants de surface de l'Atlantique Nord — schéma simplifié", pad=10)
+    return "png", _as_png(fig)
+
+
+def fig_rayons() -> tuple[str, str]:
+    """Schéma : réception du rayonnement solaire selon la latitude.
+
+    Trois faisceaux de **largeur identique** frappent le côté éclairé du
+    globe : à l'équateur l'empreinte est courte (énergie concentrée), aux
+    hautes latitudes elle s'étale sur un arc bien plus long. Schéma
+    pédagogique, pas une donnée CDS — second document de `latitude`.
+    """
+    from matplotlib.patches import Arc as MplArc
+    from matplotlib.patches import Wedge as MplWedge
+
+    fig, ax = plt.subplots(figsize=(9.6, 6.4))
+    ax.set_aspect("equal")
+    ax.axis("off")
+    ax.grid(False)
+    ax.add_patch(plt.Circle((0, 0), 1.0, fc=SEA_COLOR, ec="#475569", lw=1.8, zorder=2))
+    # Face nocturne (à droite) : les rayons arrivent de la gauche.
+    ax.add_patch(MplWedge((0, 0), 1.0, -90, 90, fc="#94a3b8", alpha=0.35, ec="none", zorder=3))
+
+    bands = [
+        (-0.09, 0.09, "#c2312b", "Équateur : le faisceau frappe de face, empreinte courte, chaleur concentrée"),
+        (0.50, 0.68, "#f2a541", "Moyennes latitudes : même largeur de faisceau sur un arc plus long"),
+        (0.79, 0.97, "#31688e", "Hautes latitudes : faisceau très incliné, empreinte étalée, énergie faible"),
+    ]
+    for y0, y1, color, _label in bands:
+        # Bords du faisceau entrant (largeur verticale identique pour les trois).
+        for y in (y0, y1):
+            x_surf = -math.sqrt(1 - y * y)
+            ax.plot([-1.72, x_surf], [y, y], color=color, lw=1.1, ls="--", alpha=0.9, zorder=4)
+        ym = (y0 + y1) / 2
+        x_mid = -math.sqrt(1 - ym * ym)
+        ax.annotate(
+            "", xy=(x_mid, ym), xytext=(x_mid - 0.4, ym),
+            arrowprops={"arrowstyle": "->", "color": color, "lw": 2.4, "shrinkA": 0, "shrinkB": 2},
+            zorder=5,
+        )
+        # Empreinte sur la face éclairée : même Δy, arc de plus en plus long.
+        t0 = math.degrees(math.asin(y0))
+        t1 = math.degrees(math.asin(y1))
+        ax.add_patch(
+            MplArc((0, 0), 2.0, 2.0, theta1=180 - t1, theta2=180 - t0,
+                   color=color, lw=7, zorder=6)
+        )
+
+    # Légende sous le globe (évite tout câble de rappel à travers la Terre).
+    ax.text(-1.86, -1.18, "Trois faisceaux de même largeur arrivent du Soleil :",
+            fontsize=9.5, color="#334155", ha="left", va="center", fontweight="bold")
+    for i, (_y0, _y1, color, label) in enumerate(bands):
+        y = -1.5 - i * 0.3
+        ax.plot([-1.86, -1.52], [y, y], color=color, lw=6, solid_capstyle="butt", zorder=6)
+        ax.text(-1.44, y, label, fontsize=9, color="#334155", ha="left", va="center")
+
+    ax.set_xlim(-1.95, 1.95)
+    ax.set_ylim(-2.28, 1.2)
+    ax.set_title("Réception du rayonnement solaire selon la latitude — schéma simplifié", pad=10)
+    fig.text(
+        0.01, -0.015,
+        "Schéma pédagogique (pas une donnée CDS) : l'inclinaison des rayons étale la même énergie sur une surface plus grande.",
+        fontsize=8, color="#64748b",
+    )
     return "png", _as_png(fig)
 
 
@@ -693,6 +946,27 @@ CHART_LABELS = {
     "figure": "figure de données",
 }
 
+#: Libellés propres à un fichier de schéma donné (second document compris).
+SCHEMA_LABELS = {
+    "courants_atlantique.png": "schéma des courants",
+    "rayons_solaires.png": "schéma des rayons",
+}
+
+
+def chart_label(chart: str, file: str = "") -> str:
+    """Libellé français d'un type de graphique (affiché en badge)."""
+    if chart == "schema" and file in SCHEMA_LABELS:
+        return SCHEMA_LABELS[file]
+    return CHART_LABELS.get(chart, chart)
+
+
+def step_badge(step: activities.Step) -> str:
+    """Badge de l'étape : document 1, et document 2 s'il existe."""
+    label = chart_label(step.chart)
+    if step.chart2:
+        label += " + " + chart_label(step.chart2, step.file2)
+    return label
+
 
 def esc(text: str) -> str:
     return htmlmod.escape(text or "", quote=True)
@@ -707,54 +981,71 @@ def figure_html(kind: str, payload: str, caption: str = "") -> str:
     return f"<figure>{inner}{cap}</figure>"
 
 
-def activity_maps(act: activities.Activity) -> list[str]:
-    key = act.key
-    if key == "cartes_climatiques":
-        return ["t2m_janvier", "t2m_juillet", "t2m_juillet", "t2m_janvier"]
-    if key == "vent_pression":
-        return ["mslp_janvier", "mslp_janvier", "vent_janvier", "vent_janvier"]
-    if key == "pluies_europe":
-        return ["tp_janvier", "tp_juillet", "tp_juillet", "tp_janvier"]
+def chart_figs(
+    chart: str,
+    n: int,
+    cities: list[str],
+    map_cache: dict[str, tuple[str, str]],
+    *,
+    map_id: str = "",
+    file: str = "",
+    act_key: str = "",
+    second: bool = False,
+) -> list[tuple[str, str, str]]:
+    """Figures (format, contenu, légende) rendues pour un type de graphique."""
+    prefix = "Second document — " if second else ""
+    if chart == "climato":
+        kind, payload = fig_climato(cities[:4])
+        return [(kind, payload, f"{prefix}Normale mensuelle 1991-2020 — {', '.join(cities[:4])}.")]
+    if chart == "ombro":
+        limit = 3 if second else 2
+        kind, payload = fig_ombro(cities[:limit])
+        return [(kind, payload, f"{prefix}Diagramme ombrothermique 1991-2020 — {', '.join(cities[:limit])}.")]
+    if chart == "annual":
+        kind, payload = fig_annual(cities[0])
+        return [(kind, payload, f"{prefix}Moyennes annuelles 1940-2024 et tendance — {cities[0]}.")]
+    if chart == "anomalies":
+        kind, payload = fig_anomalies(cities[0])
+        return [(kind, payload, f"{prefix}Écart de chaque année à la moyenne 1991-2020 — {cities[0]}.")]
+    if chart == "compare":
+        kind, payload = fig_compare(cities[0])
+        return [(kind, payload, f"{prefix}Deux périodes de trente ans comparées mois par mois — {cities[0]}.")]
+    if chart == "schema":
+        if file == "rayons_solaires.png":
+            kind, payload = fig_rayons()
+            return [(kind, payload, prefix + "Réception du rayonnement selon la latitude — schéma simplifié (pas une donnée CDS).")]
+        kind, payload = fig_courants()
+        return [(kind, payload, prefix + "Schéma simplifié des courants (pas une donnée CDS).")]
+    if chart == "figure":
+        return [
+            (kind, payload, f"{prefix}{caption}")
+            for kind, payload, caption in data_figures(act_key, n)
+        ]
+    if chart == "map" and map_id:
+        if map_id not in map_cache:
+            map_cache[map_id] = fig_map(map_id)
+        kind, payload = map_cache[map_id]
+        meta = fields.load_map(map_id)
+        return [(kind, payload, f"{prefix}{meta.get('title', map_id)} · {meta.get('source', '')}")]
     return []
 
 
 def step_figures(act: activities.Activity) -> list[list[tuple[str, str, str]]]:
-    """Figures (format, contenu, légende) pour chaque étape."""
+    """Figures (format, contenu, légende) pour chaque étape, documents 1 et 2."""
     cities = list(act.default_cities) or ["Paris"]
     out: list[list[tuple[str, str, str]]] = []
-    maps = activity_maps(act)
     map_cache: dict[str, tuple[str, str]] = {}
     for n, step in enumerate(act.steps, start=1):
-        figs: list[tuple[str, str, str]] = []
-        chart = step.chart
-        if chart == "climato":
-            kind, payload = fig_climato(cities[:4])
-            figs.append((kind, payload, f"Normale mensuelle 1991-2020 — {', '.join(cities[:4])}."))
-        elif chart == "ombro":
-            kind, payload = fig_ombro(cities[:2])
-            figs.append((kind, payload, f"Diagramme ombrothermique 1991-2020 — {', '.join(cities[:2])}."))
-        elif chart == "annual":
-            kind, payload = fig_annual(cities[0])
-            figs.append((kind, payload, f"Moyennes annuelles 1940-2024 et tendance — {cities[0]}."))
-        elif chart == "anomalies":
-            kind, payload = fig_anomalies(cities[0])
-            figs.append((kind, payload, f"Écart de chaque année à la moyenne 1991-2020 — {cities[0]}."))
-        elif chart == "compare":
-            kind, payload = fig_compare(cities[0])
-            figs.append((kind, payload, f"Deux périodes de trente ans comparées mois par mois — {cities[0]}."))
-        elif chart == "schema":
-            kind, payload = fig_courants()
-            figs.append((kind, payload, "Schéma simplifié des courants (pas une donnée CDS)."))
-        elif chart == "figure":
-            for kind, payload, caption in data_figures(act.key, n):
-                figs.append((kind, payload, caption))
-        elif chart == "map" and n - 1 < len(maps):
-            mid = maps[n - 1]
-            if mid not in map_cache:
-                map_cache[mid] = fig_map(mid)
-            kind, payload = map_cache[mid]
-            meta = fields.load_map(mid)
-            figs.append((kind, payload, f"{meta.get('title', mid)} · {meta.get('source', '')}"))
+        figs = chart_figs(
+            step.chart, n, cities, map_cache,
+            map_id=step.map_id, act_key=act.key,
+        )
+        if step.chart2:
+            figs += chart_figs(
+                step.chart2, n, cities, map_cache,
+                map_id=step.map2_id, file=step.file2,
+                act_key=act.key, second=True,
+            )
         out.append(figs)
     return out
 
@@ -868,7 +1159,7 @@ def render_activity(act: activities.Activity) -> str:
           <span class="step-n">{i}</span>
           <h2>{esc(step.title)}</h2>
           <span class="badge">{step.minutes} min</span>
-          <span class="badge">{esc(CHART_LABELS.get(step.chart, step.chart))}</span>
+          <span class="badge">{esc(step_badge(step))}</span>
         </div>
         <div class="question">{esc(step.instruction)}</div>
         <div class="hint"><b>Piste.</b> {esc(step.hint)}</div>
@@ -1000,10 +1291,18 @@ def build(keys: list[str] | None = None) -> list[Path]:
         except KeyError:
             pass
     schemas = OUT_DIR.parent / "assets" / "schemas"
-    if any(s.chart == "schema" for a in acts for s in a.steps):
+    wanted: dict[str, object] = {}
+    for a in acts:
+        for s in a.steps:
+            if s.chart == "schema":
+                wanted.setdefault("courants_atlantique.png", fig_courants)
+            if s.chart2 == "schema" and s.file2 == "rayons_solaires.png":
+                wanted.setdefault(s.file2, fig_rayons)
+    if wanted:
         schemas.mkdir(parents=True, exist_ok=True)
-        _, courant = fig_courants()
-        (schemas / "courants_atlantique.png").write_bytes(base64.b64decode(courant))
+        for filename, factory in wanted.items():
+            _, payload = factory()  # type: ignore[operator]
+            (schemas / filename).write_bytes(base64.b64decode(payload))
     if not keys:
         index = OUT_DIR / "index.html"
         index.write_text(render_index(acts), encoding="utf-8")

@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from c3s2 import activities, config, store
+from c3s2 import activities, analysis, config, store
 
 ALL = activities.ACTIVITIES
 ALLOWED_CHARTS = {"none", "climato", "ombro", "annual", "anomalies", "compare", "map", "heat", "schema", "figure"}
@@ -140,16 +140,59 @@ def test_mediterranean_precip_minimum(precip: pd.DataFrame) -> None:
 
 
 def test_each_step_maps_to_a_renderable_chart() -> None:
+    root = Path(__file__).resolve().parent.parent
     for act in ALL:
         for n, step in enumerate(act.steps, start=1):
             if step.chart == "none":
                 assert act.key == "latitude" and n == 1
             if step.chart == "map":
                 assert act.key in {"cartes_climatiques", "vent_pression", "pluies_europe"}
+                assert step.map_id, f"{act.key} étape {n} : map_id absent"
             if step.chart == "schema":
                 assert act.key == "vents_courants"
             if step.chart == "figure":
                 assert act.key == "elnino"
+            # Second document des étapes 3-4 : type rendable et ressources présentes.
+            if step.chart2:
+                assert step.chart2 in ALLOWED_CHARTS and step.chart2 != "none"
+                if step.chart2 == "map":
+                    assert step.map2_id, f"{act.key} étape {n} : map2_id absent"
+                if step.chart2 == "schema":
+                    assert step.file2, f"{act.key} étape {n} : file2 absent"
+                    assert (root / "public" / "assets" / "schemas" / step.file2).exists(), (
+                        f"{act.key} étape {n} : {step.file2} non généré "
+                        "(lancez python scripts/build_activities.py)"
+                    )
+
+
+def _doc_id(act, n: int, which: int) -> str | None:
+    """Identité du document `which` (1 ou 2) de l'étape `n`, ou None."""
+    step = act.steps[n - 1]
+    chart = step.chart if which == 1 else step.chart2
+    if not chart or chart == "none":
+        return None
+    if chart == "map":
+        return "map:" + (step.map_id if which == 1 else step.map2_id)
+    if chart == "schema":
+        return "schema:" + (step.file2 or "courants_atlantique.png")
+    if chart == "figure":
+        return f"figure:{act.key}_{n}"
+    return chart
+
+
+def test_every_activity_has_two_distinct_documents() -> None:
+    """Chaque activité fait interpréter au moins deux documents différents."""
+    payload = {d["key"]: d for d in activities.list_activities(with_answers=False)}
+    for act in ALL:
+        ids = set()
+        for n in range(1, len(act.steps) + 1):
+            for which in (1, 2):
+                doc = _doc_id(act, n, which)
+                if doc:
+                    ids.add(doc)
+        assert len(ids) >= 2, f"{act.key} : un seul document à interpréter ({sorted(ids)})"
+        # Le second document sort aussi dans le JSON servi à l'application.
+        assert payload[act.key]["steps"][2].get("chart2") is not None
 
 
 def test_minutes_sum_to_a_class_session() -> None:
@@ -374,3 +417,32 @@ def test_elnino_exam_table_matches_data() -> None:
     answers = " ".join(q.expected for q in activities.get("elnino").exam.questions)
     assert "3,0 °C" in answers  # écart d'un août à l'autre
     assert "+2,6" in answers  # anomalie d'août 2026 (ou +2,7 selon l'arrondi)
+
+
+# --------------------------------------------------------------------------- #
+# Couverture des données : la série court jusqu'à LAST_DATA_YEAR (partielle)
+# --------------------------------------------------------------------------- #
+
+
+def test_precomputed_files_reach_the_last_data_year() -> None:
+    for variable in store.PRECOMPUTED_FILES:
+        frame = store._raw_frame(variable)
+        assert frame is not None, f"CSV manquant : {variable}"
+        assert frame.index.max().year == config.LAST_DATA_YEAR
+        assert frame.index.max().month == config.LAST_DATA_MONTH
+        assert not frame.index.duplicated().any()
+        for city in ("Paris", "Brest", "Dakar", "Sydney"):
+            last = frame[city].dropna().index.max()
+            assert last.year == config.LAST_DATA_YEAR, f"{variable}/{city} s'arrête en {last.year}"
+
+
+def test_annual_mean_excludes_partial_years() -> None:
+    complete = pd.Series(
+        range(12), index=pd.date_range("2024-01-01", periods=12, freq="MS"), dtype="float64"
+    )
+    partial = pd.Series(
+        [20.0] * 8, index=pd.date_range(f"{config.LAST_DATA_YEAR}-01-01", periods=8, freq="MS")
+    )
+    annual = analysis.annual_mean(pd.concat([complete, partial]))
+    assert list(annual.index) == [2024]  # 2026 n'a que 8 mois : écartée
+    assert float(annual.loc[2024]) == float(complete.mean())
