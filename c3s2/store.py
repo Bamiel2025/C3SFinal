@@ -38,8 +38,12 @@ PRECIP_MARKER = config.PRECOMPUTED_DIR / ".precip_monthly_total"
 
 #: Libellé des fichiers, pour la page d'aide.
 FILES_INVENTORY = {
-    "villes_temperature.csv": "Température mensuelle à 2 m (°C), 1940-2024",
-    "villes_precipitations.csv": "Précipitations mensuelles (mm), 1940-2024",
+    "villes_temperature.csv": (
+        f"Température mensuelle à 2 m (°C), {config.FIRST_YEAR}-{config.LAST_DATA_YEAR}"
+    ),
+    "villes_precipitations.csv": (
+        f"Précipitations mensuelles (mm), {config.FIRST_YEAR}-{config.LAST_DATA_YEAR}"
+    ),
 }
 
 _lock = threading.Lock()

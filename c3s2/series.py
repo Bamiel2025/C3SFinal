@@ -83,7 +83,7 @@ def fetch_cds(place: places.Place, variable: str, start: int, end: int) -> CityR
     meta = datasets.VARIABLES.get(variable)
     dataset = datasets.get_dataset("monthly_means")
     y0 = max(start, dataset.start_year)
-    y1 = min(end, config.LAST_COMPLETE_YEAR)
+    y1 = min(end, config.LAST_DATA_YEAR)
     if y0 > y1:
         raise ValueError(f"Période vide : {start}-{end}.")
 
@@ -227,7 +227,7 @@ def get_series(
         raise ValueError("Six villes au maximum par graphique.")
 
     start = max(int(start), datasets.get_dataset("monthly_means").start_year)
-    end = min(int(end), config.LAST_COMPLETE_YEAR)
+    end = min(int(end), config.LAST_DATA_YEAR)
     if start > end:
         raise ValueError(f"Période vide : {start}-{end}.")
 

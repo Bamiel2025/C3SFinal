@@ -92,8 +92,19 @@ def is_local() -> bool:
 #: Normale climatique de référence (OMM).
 REFERENCE_PERIOD = (1991, 2020)
 
-#: Dernière année complète disponible dans les séries préparées.
-LAST_COMPLETE_YEAR = 2024
+#: Dernière année complète (12 mois) disponible dans les séries mensuelles.
+LAST_COMPLETE_YEAR = 2025
+
+#: Dernière année de données mensuelles (2026 est partielle : relevés
+#: disponibles jusqu'à LAST_DATA_MONTH).
+LAST_DATA_YEAR = 2026
+
+#: Mois du dernier relevé disponible pour LAST_DATA_YEAR.
+LAST_DATA_MONTH = 8
+
+#: Dernière année de données journalières (activité canicule suspendue :
+#: les requêtes journalières au CDS échouent au-delà de cette borne).
+LAST_DAILY_YEAR = 2024
 
 #: Première année des séries préparées.
 FIRST_YEAR = 1940

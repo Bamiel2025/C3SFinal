@@ -104,6 +104,39 @@ def test_series_rejects_bad_source() -> None:
     assert r.status_code == 422
 
 
+def test_config_reports_data_coverage() -> None:
+    r = client.get("/api/config")
+    assert r.status_code == 200
+    assert r.json()["years"] == [config.FIRST_YEAR, config.LAST_DATA_YEAR]
+
+
+def test_series_serves_the_partial_current_year() -> None:
+    r = client.get(
+        "/api/series",
+        params={
+            "cities": "Paris",
+            "variable": "2m_temperature",
+            "start": config.LAST_DATA_YEAR,
+            "end": config.LAST_DATA_YEAR,
+            "source": "precomputed",
+        },
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["meta"]["end"] == config.LAST_DATA_YEAR
+    dates = body["series"]["Paris"]["dates"]
+    assert dates[0] == f"{config.LAST_DATA_YEAR}-01"
+    assert dates[-1] == f"{config.LAST_DATA_YEAR}-{config.LAST_DATA_MONTH:02d}"
+
+
+def test_series_rejects_year_beyond_coverage() -> None:
+    r = client.get(
+        "/api/series",
+        params={"cities": "Paris", "end": config.LAST_DATA_YEAR + 1},
+    )
+    assert r.status_code == 422
+
+
 def test_activities_hide_answers_without_code() -> None:
     r = client.get("/api/activities")
     assert r.status_code == 200

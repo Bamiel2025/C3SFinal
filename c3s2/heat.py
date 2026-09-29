@@ -104,7 +104,7 @@ def _fetch_daily(place: places.Place, kind: str, start: int, end: int) -> pd.Ser
 
     dataset = datasets.get_dataset("daily_stats")
     y0 = max(int(start), dataset.start_year)
-    y1 = min(int(end), config.LAST_COMPLETE_YEAR)
+    y1 = min(int(end), config.LAST_DAILY_YEAR)
     if y0 > y1:
         raise ValueError(f"Période vide : {start}-{end}.")
 
@@ -267,7 +267,7 @@ def _count_both(
         return {"years": [], "values": [], "total": 0}
     mask = (tmax >= tmax_threshold) & (tmin >= tmin_threshold)
     counts = mask.astype(float).groupby(mask.index.year).sum()
-    counts = counts[counts.index <= config.LAST_COMPLETE_YEAR]
+    counts = counts[counts.index <= config.LAST_DAILY_YEAR]
     return {
         "years": [int(y) for y in counts.index],
         "values": [int(v) for v in counts.values],

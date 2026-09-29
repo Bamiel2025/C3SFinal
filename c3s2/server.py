@@ -99,7 +99,7 @@ def get_config() -> dict[str, Any]:
             "key_diagnosis": diagnose_key(cfg.key).as_dict(),
             "teacher_code_required": True,
             "reference_period": list(config.REFERENCE_PERIOD),
-            "years": [config.FIRST_YEAR, config.LAST_COMPLETE_YEAR],
+            "years": [config.FIRST_YEAR, config.LAST_DATA_YEAR],
             "precomputed": store.inventory(),
             "heat_coverage": heat.available(),
             "attribution": config.ERA5_ATTRIBUTION,
@@ -160,8 +160,8 @@ def get_places() -> dict[str, Any]:
 def get_series(
     cities: str = Query(..., description="Villes séparées par des virgules"),
     variable: str = Query("2m_temperature"),
-    start: int = Query(config.FIRST_YEAR, ge=1940, le=config.LAST_COMPLETE_YEAR),
-    end: int = Query(config.LAST_COMPLETE_YEAR, ge=1940, le=config.LAST_COMPLETE_YEAR),
+    start: int = Query(config.FIRST_YEAR, ge=1940, le=config.LAST_DATA_YEAR),
+    end: int = Query(config.LAST_DATA_YEAR, ge=1940, le=config.LAST_DATA_YEAR),
     source: str = Query("auto", pattern="^(auto|precomputed|cds|simulated)$"),
 ) -> dict[str, Any]:
     """
@@ -221,8 +221,8 @@ async def _json_body(request: Request) -> dict[str, Any]:
 @app.get("/api/heat")
 def get_heat(
     cities: str = Query(...),
-    start: int = Query(2010, ge=1940, le=config.LAST_COMPLETE_YEAR),
-    end: int = Query(config.LAST_COMPLETE_YEAR, ge=1940, le=config.LAST_COMPLETE_YEAR),
+    start: int = Query(2010, ge=1940, le=config.LAST_DAILY_YEAR),
+    end: int = Query(config.LAST_DAILY_YEAR, ge=1940, le=config.LAST_DAILY_YEAR),
     tmax: float = Query(35.0),
     tmin: float = Query(20.0),
 ) -> dict[str, Any]:
