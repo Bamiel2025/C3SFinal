@@ -22,8 +22,37 @@ from typing import Any
 #: Racine du projet (dossier contenant `vercel.json`).
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
+
+def _app_version() -> str:
+    """
+    SHA court du code déployé (affiché en pied de page : permet de vérifier
+    que Vercel sert bien la dernière version poussée sur GitHub).
+    Priorité : variable d'environnement, SHA fourni par Vercel, git local.
+    """
+    for key in ("C3S2_VERSION", "VERCEL_GIT_COMMIT_SHA"):
+        val = os.environ.get(key, "").strip()
+        if val:
+            return val[:12]
+    try:
+        import subprocess
+
+        out = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        sha = out.stdout.strip()
+        if out.returncode == 0 and sha:
+            return sha[:12]
+    except Exception:  # noqa: BLE001 - git absent (fonction Vercel)
+        pass
+    return "2.0.0"
+
+
 #: Version de l'application, affichée dans l'en-tête et le diagnostic.
-APP_VERSION = "2.0.0"
+APP_VERSION = _app_version()
 APP_NAME = "C3S² Climate Lab"
 
 # --------------------------------------------------------------------------- #

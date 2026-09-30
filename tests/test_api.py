@@ -24,6 +24,14 @@ def test_health() -> None:
     assert body["app"]
 
 
+def test_health_reports_deployment_version() -> None:
+    """La version (SHA déployé) est exposée : on vérifie ce que sert Vercel."""
+    r = client.get("/api/health")
+    body = r.json()
+    assert body["version"] == config.APP_VERSION
+    assert isinstance(body["version"], str) and body["version"]
+
+
 def test_config_masks_the_cds_key() -> None:
     r = client.get("/api/config")
     assert r.status_code == 200

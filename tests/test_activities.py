@@ -488,3 +488,23 @@ def test_fiche_lock_ui_is_reachable() -> None:
             f"{fiche.name} : « Voir le corrigé » ne renvoie pas vers le code enseignant"
         )
         assert "Code enseignant requis" in text
+        assert "localStorage" not in text, (
+            f"{fiche.name} : code mémorisé au-delà de l'onglet"
+        )
+        assert "sessionStorage" in text, f"{fiche.name} : pas de mémoire d'onglet"
+
+
+def test_spa_teacher_code_is_session_scoped() -> None:
+    """Le code enseignant est oublié à la fermeture de l'onglet."""
+    text = (
+        Path(__file__).resolve().parent.parent
+        / "public"
+        / "assets"
+        / "js"
+        / "app.js"
+    ).read_text(encoding="utf-8")
+    assert "localStorage" not in text, "code persistant entre sessions"
+    assert 'sessionStorage.getItem("c3s2_teacher_code")' in text
+    assert 'sessionStorage.setItem("c3s2_teacher_code"' in text
+    assert "teacher-forget" in text, "pas de bouton Verrouiller dans la SPA"
+    assert "if (!btn) return" not in text, "Verrouiller inaccessible sans formulaire"

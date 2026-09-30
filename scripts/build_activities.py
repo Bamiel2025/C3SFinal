@@ -930,7 +930,7 @@ JS = """
   }
   function refresh(){
     var unlocked = false;
-    try { unlocked = (localStorage.getItem(KEY) || "") === CODE; } catch(e){}
+    try { unlocked = (sessionStorage.getItem(KEY) || "") === CODE; } catch(e){}
     document.querySelectorAll("[data-locked-step]").forEach(function(box){
       var btn = box.querySelector(".btn-answer");
       var ans = box.querySelector(".answer");
@@ -961,7 +961,7 @@ JS = """
       var code = (input && input.value || "").trim();
       var out = document.getElementById("lock-out");
       if (code === CODE){
-        try { localStorage.setItem(KEY, code); } catch(e){}
+        try { sessionStorage.setItem(KEY, code); } catch(e){}
         refresh();
       } else if (out){
         out.innerHTML = '<span class="badge">Code incorrect</span>';
@@ -979,7 +979,7 @@ JS = """
       }
     }
     if (ev.target && ev.target.id === "lock-forget"){
-      try { localStorage.removeItem(KEY); } catch(e){}
+      try { sessionStorage.removeItem(KEY); } catch(e){}
       refresh();
     }
   });

@@ -125,8 +125,9 @@ téléchargé) :
 
 Les corrigés sont embarqués **chiffrés** dans chaque fiche : ils n'apparaissent
 ni à l'écran ni dans le code source tant que le **code enseignant (2027)**
-n'est pas saisi. Le code est mémorisé par le navigateur ; le bouton
-*Verrouiller* le réinitialise. Les fiches *rechauffement* et *elnino*
+n'est pas saisi. Le code est mémorisé pour l'onglet ouvert uniquement
+(oublié à sa fermeture) ; le bouton *Verrouiller* (fiches et application)
+referme immédiatement. Les fiches *rechauffement* et *elnino*
 portent en plus la section **Sujet type brevet** (documents, questions et
 corrigés verrouillés de la même façon).
 
@@ -160,13 +161,31 @@ code). Un corrigé qui contredit les données fait échouer la suite de tests.
 
 ## Déploiement sur Vercel
 
-1. Pousser le dépôt (`.env` est ignoré : ne jamais le committer) :
-   `git remote add origin https://github.com/Bamiel2025/C3SFinal.git && git push -u origin main`.
+1. Pousser le dépôt sur la branche `master` (branche de production pour
+   Vercel — `.env` est ignoré : ne jamais le committer) :
+   `git push origin master`.
 2. Sur <https://vercel.com> → *Add New → Project* → importer le dépôt.
    Aucun *Framework Preset*, aucun *Build Command* : `vercel.json` s'en charge.
 3. *Project Settings → Environment Variables* : renseigner `CDSAPI_URL`,
    `CDSAPI_KEY`, `C3S2_TEACHER_CODE`.
-4. Déployer.
+4. Déployer. Chaque `git push` sur `master` redéploie automatiquement ;
+   sinon : onglet *Deployments → … → Redeploy*.
+
+Vérifier que le verrouillage est actif en production :
+
+- le pied de page affiche `version <sha>` : il doit correspondre au dernier
+  commit (`git log --oneline -1`) ; sinon, le site sert encore l'ancien code
+  → forcer un *Redeploy* ;
+- en **navigation privée** (aucun code mémorisé), l'onglet *Aide & CDS*
+  affiche « accès réservé » et les activités montrent « Corrigé réservé au
+  code enseignant » ;
+- `https://<site>/api/health` renvoie `"version": "<sha>"`.
+
+Rappel : les PDF `*-corrige.pdf` vivent dans `corriges/` (hors `public/`,
+donc jamais déployés en statique) et ne sont servis que par
+`/api/corriges/<fiche>-corrige.pdf?code=2027` (403 sans code). Sur le site
+statique, le professeur obtient un PDF corrigé en ouvrant une fiche,
+saisissant le code puis en imprimant la page.
 
 Notes :
 

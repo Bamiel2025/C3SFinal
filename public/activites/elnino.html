@@ -262,7 +262,7 @@ footer{color:var(--muted);font-size:.8rem;margin-top:2rem}
   }
   function refresh(){
     var unlocked = false;
-    try { unlocked = (localStorage.getItem(KEY) || "") === CODE; } catch(e){}
+    try { unlocked = (sessionStorage.getItem(KEY) || "") === CODE; } catch(e){}
     document.querySelectorAll("[data-locked-step]").forEach(function(box){
       var btn = box.querySelector(".btn-answer");
       var ans = box.querySelector(".answer");
@@ -293,7 +293,7 @@ footer{color:var(--muted);font-size:.8rem;margin-top:2rem}
       var code = (input && input.value || "").trim();
       var out = document.getElementById("lock-out");
       if (code === CODE){
-        try { localStorage.setItem(KEY, code); } catch(e){}
+        try { sessionStorage.setItem(KEY, code); } catch(e){}
         refresh();
       } else if (out){
         out.innerHTML = '<span class="badge">Code incorrect</span>';
@@ -311,7 +311,7 @@ footer{color:var(--muted);font-size:.8rem;margin-top:2rem}
       }
     }
     if (ev.target && ev.target.id === "lock-forget"){
-      try { localStorage.removeItem(KEY); } catch(e){}
+      try { sessionStorage.removeItem(KEY); } catch(e){}
       refresh();
     }
   });

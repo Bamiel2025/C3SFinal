@@ -16,7 +16,7 @@
     places: null,
     activities: null,
     unlocked: false,
-    teacherCode: localStorage.getItem("c3s2_teacher_code") || "",
+    teacherCode: sessionStorage.getItem("c3s2_teacher_code") || "",
     explorer: {
       variable: "2m_temperature",
       cities: ["Brest", "Strasbourg"],
@@ -201,6 +201,8 @@
   async function ensureData() {
     if (!state.config) state.config = await api("api/config");
     if (!state.places) state.places = await api("api/places");
+    const v = document.getElementById("app-version");
+    if (v) v.textContent = state.config && state.config.version ? " · version " + state.config.version : "";
   }
 
   /* ======================================================================== */
@@ -752,7 +754,7 @@
         saisie du code enseignant.</p>
       </div>
 
-      ${state.unlocked ? "" : teacherBoxMarkup()}
+      ${state.unlocked ? forgetMarkup() : teacherBoxMarkup()}
 
       <div class="activity-list" style="margin-top:1.1rem">
         ${list.map(a => `
@@ -792,17 +794,33 @@
     `;
   }
 
+  function forgetMarkup() {
+    return `
+      <div class="teacher-box" id="teacher-box">
+        <div class="row">
+          <div>
+            <span class="badge badge-ok">corrigés visibles</span>
+            <span class="hint">Pense à reverrouiller avant de projeter aux élèves.</span>
+          </div>
+          <div style="flex:0 0 auto">
+            <button class="btn" id="teacher-forget" style="background:#64748b;color:#fff">Verrouiller</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   function bindTeacherBox(root, rerender) {
-    const btn = (root.ownerDocument || document).getElementById("teacher-unlock");
-    if (!btn) return;
-    btn.addEventListener("click", async () => {
+    const doc = root.ownerDocument || document;
+    const btn = doc.getElementById("teacher-unlock");
+    if (btn) btn.addEventListener("click", async () => {
       const input = document.getElementById("teacher-code");
       const code = (input && input.value || "").trim();
       try {
         const out = await api("api/teacher/unlock", { method: "POST", body: { code } });
         if (out.ok) {
           state.teacherCode = code;
-          localStorage.setItem("c3s2_teacher_code", code);
+          sessionStorage.setItem("c3s2_teacher_code", code);
           state.unlocked = true;
           try { await fetchActivities(); } catch (e) { /* keep current list */ }
           toast("Corrigés déverrouillés.", "ok");
@@ -814,8 +832,17 @@
         html("teacher-out", esc(err.message));
       }
     });
-    const input = document.getElementById("teacher-code");
-    if (input) input.addEventListener("keydown", (e) => { if (e.key === "Enter") btn.click(); });
+    const input = doc.getElementById("teacher-code");
+    if (input && btn) input.addEventListener("keydown", (e) => { if (e.key === "Enter") btn.click(); });
+    const forget = doc.getElementById("teacher-forget");
+    if (forget) forget.addEventListener("click", async () => {
+      state.teacherCode = "";
+      state.unlocked = false;
+      try { sessionStorage.removeItem("c3s2_teacher_code"); } catch (e) {}
+      try { await fetchActivities(); } catch (e) { /* keep current list */ }
+      toast("Corrigés verrouillés.", "ok");
+      await rerender();
+    });
   }
 
   async function renderActivity(main, params) {
@@ -889,7 +916,9 @@
 
       ${act.exam ? examMarkup(act.exam) : ""}
 
-      ${state.unlocked ? "" : `<div style="margin-top:1.1rem">${teacherBoxMarkup()}</div>`}
+      ${state.unlocked
+        ? `<div style="margin-top:1.1rem">${forgetMarkup()}</div>`
+        : `<div style="margin-top:1.1rem">${teacherBoxMarkup()}</div>`}
 
       <div class="progress-track" id="progress">
         ${act.steps.map((s, i) => `<div data-step="${i + 1}"></div>`).join("")}
@@ -1553,6 +1582,7 @@
         <p>C3S² fonctionne sans clé pour tout ce qui est pré-calculé. La clé du
         Climate Data Store n'est nécessaire que pour les requêtes en direct
         (périodes hors couverture, champs spatiaux, données journalières).</p>
+        ${forgetMarkup()}
       </div>
 
       <div class="grid grid-2">
@@ -1661,6 +1691,7 @@ key: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</pre>
 
     el("cds-test") && el("cds-test").addEventListener("click", () => runTest(false));
     el("cds-deep") && el("cds-deep").addEventListener("click", () => runTest(true));
+    bindTeacherBox(main, () => router());
 
     async function runTest(deep) {
       const out = el("cds-out");
