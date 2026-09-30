@@ -89,11 +89,13 @@ footer{color:var(--muted);font-size:.8rem;margin-top:2rem}
     <div style="display:flex;gap:.5rem;align-items:center;margin-top:.4rem;flex-wrap:wrap">
       <input type="password" id="lock-code" placeholder="Code enseignant" autocomplete="off">
       <button class="btn" id="lock-btn" type="button">Afficher les corrigés</button>
-      <button class="btn btn-forget" type="button" style="background:#64748b">Verrouiller</button>
     </div>
     <div id="lock-out" class="small" style="margin-top:.4rem"></div>
     <p class="small" style="color:var(--muted)">Sans code, la fiche imprimée ou projetée reste sans corrigé.</p>
   </section>
+  <p class="no-print" style="margin-top:-.5rem">
+    <button class="btn btn-forget" id="lock-forget" type="button" style="background:#64748b;display:none">Verrouiller les corrigés</button>
+  </p>
   
   <section class="card">
     <p class="kicker">Préparation au brevet</p>
@@ -282,6 +284,8 @@ footer{color:var(--muted);font-size:.8rem;margin-top:2rem}
     if (badge) badge.style.display = unlocked ? "" : "none";
     var form = document.getElementById("lock-form");
     if (form) form.style.display = unlocked ? "none" : "";
+    var forget = document.getElementById("lock-forget");
+    if (forget) forget.style.display = unlocked ? "" : "none";
   }
   document.addEventListener("click", function(ev){
     if (ev.target && ev.target.id === "lock-btn"){
@@ -295,7 +299,18 @@ footer{color:var(--muted);font-size:.8rem;margin-top:2rem}
         out.innerHTML = '<span class="badge">Code incorrect</span>';
       }
     }
-    if (ev.target && ev.target.classList && ev.target.classList.contains("btn-forget")){
+    if (ev.target && ev.target.classList && ev.target.classList.contains("btn-answer")){
+      var f = document.getElementById("lock-form");
+      var o = document.getElementById("lock-out");
+      if (f){
+        f.style.display = "";
+        var i = document.getElementById("lock-code");
+        if (i) i.focus();
+        if (o) o.innerHTML = '<span class="badge">Code enseignant requis</span>';
+        f.scrollIntoView({behavior:"smooth", block:"center"});
+      }
+    }
+    if (ev.target && ev.target.id === "lock-forget"){
       try { localStorage.removeItem(KEY); } catch(e){}
       refresh();
     }

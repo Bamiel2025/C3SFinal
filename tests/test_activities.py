@@ -474,3 +474,17 @@ def test_fiches_do_not_serve_corriges_from_public() -> None:
     assert not leaked, f"corrigés exposés dans public/ : {leaked}"
     folder = Path(__file__).resolve().parent.parent / "corriges"
     assert len(list(folder.glob("*-corrige.pdf"))) == 12
+
+
+def test_fiche_lock_ui_is_reachable() -> None:
+    """« Voir le corrigé » réclame le code ; « Verrouiller » reste cliquable."""
+    root = Path(__file__).resolve().parent.parent / "public" / "activites"
+    for fiche in sorted(p for p in root.glob("*.html") if p.name != "index.html"):
+        text = fiche.read_text(encoding="utf-8")
+        assert 'id="lock-forget"' in text, f"{fiche.name} : bouton Verrouiller absent"
+        form = text.split('id="lock-form"', 1)[1].split("</section>", 1)[0]
+        assert "lock-forget" not in form, f"{fiche.name} : Verrouiller enfermé dans le formulaire verrouillé"
+        assert 'contains("btn-answer")' in text, (
+            f"{fiche.name} : « Voir le corrigé » ne renvoie pas vers le code enseignant"
+        )
+        assert "Code enseignant requis" in text
