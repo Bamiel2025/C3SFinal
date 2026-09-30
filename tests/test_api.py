@@ -244,6 +244,61 @@ def test_unknown_api_route_is_404() -> None:
     assert r.status_code == 404
 
 
+def _find_keys(obj: object, wanted: set[str]) -> set[str]:
+    """Clés de `wanted` trouvées récursivement dans un payload JSON."""
+    found: set[str] = set()
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            if key in wanted:
+                found.add(key)
+            found |= _find_keys(value, wanted)
+    elif isinstance(obj, list):
+        for item in obj:
+            found |= _find_keys(item, wanted)
+    return found
+
+
+def test_activities_payload_has_no_answers_without_code() -> None:
+    """Sans code, aucun `expected` ni `attendu` (étapes ET examen) ne fuite."""
+    r = client.get("/api/activities")
+    assert r.status_code == 200
+    assert not _find_keys(r.json(), {"expected", "attendu"})
+
+
+def test_activities_payload_exposes_answers_with_code() -> None:
+    r = client.get("/api/activities", params={"code": TEACHER})
+    assert r.status_code == 200
+    assert _find_keys(r.json(), {"expected", "attendu"})
+
+
+def test_student_pdf_stays_public() -> None:
+    r = client.get("/activites/pdf/rechauffement.pdf")
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("application/pdf")
+
+
+def test_corrige_pdfs_require_the_teacher_code() -> None:
+    # Les corrigés ne sont plus dans public/ : la route statique est verrouillée.
+    r = client.get("/activites/pdf/rechauffement-corrige.pdf")
+    assert r.status_code == 403
+    r = client.get("/activites/pdf/rechauffement-corrige.pdf", params={"code": TEACHER})
+    assert r.status_code != 200 or "text/html" in r.headers.get("content-type", "")
+
+    # Route dédiée : refus sans code, refus avec un faux code, ouverture avec le bon.
+    r = client.get("/api/corriges/rechauffement-corrige.pdf")
+    assert r.status_code == 403
+    r = client.get("/api/corriges/rechauffement-corrige.pdf", params={"code": "0000"})
+    assert r.status_code == 403
+    r = client.get("/api/corriges/rechauffement-corrige.pdf", params={"code": TEACHER})
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("application/pdf")
+
+    # Noms invalides refusés, même avec le code.
+    for bad in ("sub/rechauffement-corrige.pdf", "rechauffement.pdf", ".env"):
+        r = client.get(f"/api/corriges/{bad}", params={"code": TEACHER})
+        assert r.status_code in {400, 404}, bad
+
+
 @pytest.mark.parametrize("code", ["", " ", "123", "abcd"])
 def test_bad_teacher_codes(code: str) -> None:
     assert config.check_teacher_code(code) is False

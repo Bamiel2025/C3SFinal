@@ -27,6 +27,9 @@ from .cds import ConnectionReport, diagnose_key, test_connection
 
 PUBLIC_DIR = config.PROJECT_ROOT / "public"
 INDEX_HTML = PUBLIC_DIR / "index.html"
+#: PDF de corrigés : volontairement **hors** de `public/` pour qu'aucun hébergeur
+#: statique ne les serve ; accès exclusivement via `/api/corriges` + code.
+CORRIGES_DIR = config.PROJECT_ROOT / "corriges"
 
 app = FastAPI(
     title="C3S² Climate Lab — API",
@@ -282,6 +285,22 @@ async def cds_test(request: Request) -> dict[str, Any]:
 # --------------------------------------------------------------------------- #
 
 
+@app.get("/api/corriges/{name}")
+def get_corrige(name: str, code: str | None = Query(None)) -> Any:
+    """Télécharge un PDF de corrigé — réservé au code enseignant (2027)."""
+    if not config.check_teacher_code(code):
+        return JSONResponse(
+            status_code=403,
+            content={"error": "Corrigé verrouillé : code enseignant requis (?code=...)."},
+        )
+    if Path(name).name != name or not name.endswith(".pdf"):
+        return JSONResponse(status_code=400, content={"error": "Nom de fichier invalide."})
+    path = CORRIGES_DIR / name
+    if not path.is_file():
+        return JSONResponse(status_code=404, content={"error": f"Corrigé introuvable : {name}"})
+    return FileResponse(path, media_type="application/pdf", filename=name)
+
+
 @app.get("/")
 def index() -> Any:
     """Page d'accueil : fichier statique si présent, sinon renvoi CDN."""
@@ -291,11 +310,12 @@ def index() -> Any:
 
 
 @app.get("/{path:path}")
-def spa_fallback(path: str) -> Any:
+def spa_fallback(path: str, request: Request) -> Any:
     """
     Routage SPA : toute route inconnue renvoie `index.html`, ce qui permet des
     URL propres (`/activites`) même sur un hébergeur sans règle de réécriture.
-    Les fichiers réellement présents dans `public/` sont servis tels quels.
+    Les fichiers réellement présents dans `public/` sont servis tels quels ;
+    un éventuel `*-corrige.pdf` déposé ici par erreur reste verrouillé.
     """
     if path.startswith("api/"):
         return JSONResponse(status_code=404, content={"error": f"Route inconnue : /{path}"})
@@ -305,6 +325,14 @@ def spa_fallback(path: str) -> Any:
         candidate.relative_to(PUBLIC_DIR.resolve())
     except ValueError:  # tentative de traversée de dossier
         return JSONResponse(status_code=400, content={"error": "Chemin invalide."})
+
+    if candidate.name.endswith("-corrige.pdf") and not config.check_teacher_code(
+        request.query_params.get("code")
+    ):
+        return JSONResponse(
+            status_code=403,
+            content={"error": "Corrigé verrouillé : code enseignant requis (?code=...)."},
+        )
 
     if candidate.is_file():
         return FileResponse(candidate)

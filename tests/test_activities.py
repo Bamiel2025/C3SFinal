@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import calendar
 import json
+import re
 import unicodedata
 from pathlib import Path
 
@@ -446,3 +447,30 @@ def test_annual_mean_excludes_partial_years() -> None:
     annual = analysis.annual_mean(pd.concat([complete, partial]))
     assert list(annual.index) == [2024]  # 2026 n'a que 8 mois : écartée
     assert float(annual.loc[2024]) == float(complete.mean())
+
+
+# --------------------------------------------------------------------------- #
+# Fiches HTML autonomes : les corrigés ne circulent que chiffrés (code 2027)
+# --------------------------------------------------------------------------- #
+
+
+def test_fiches_never_contain_plaintext_answers() -> None:
+    """Aucune fiche HTML livrée ne contient de corrigé en clair."""
+    root = Path(__file__).resolve().parent.parent / "public" / "activites"
+    fiches = sorted(p for p in root.glob("*.html") if p.name != "index.html")
+    assert len(fiches) == 12, [p.name for p in fiches]
+    for fiche in fiches:
+        text = fiche.read_text(encoding="utf-8")
+        assert 'data-locked="' in text, f"{fiche.name} : aucun corrigé chiffré"
+        assert 'var CODE = "2027"' in text, f"{fiche.name} : pas de verrou code 2027"
+        for body in re.findall(r'<div class="answer"[^>]*>(.*?)</div>', text, flags=re.S):
+            assert body.strip() == "", f"{fiche.name} : corrigé en clair ({body[:60]!r})"
+
+
+def test_fiches_do_not_serve_corriges_from_public() -> None:
+    """Les PDF de corrigés sont hors de `public/` (non servis par le CDN)."""
+    public_pdf = Path(__file__).resolve().parent.parent / "public" / "activites" / "pdf"
+    leaked = sorted(p.name for p in public_pdf.glob("*-corrige.pdf"))
+    assert not leaked, f"corrigés exposés dans public/ : {leaked}"
+    folder = Path(__file__).resolve().parent.parent / "corriges"
+    assert len(list(folder.glob("*-corrige.pdf"))) == 12

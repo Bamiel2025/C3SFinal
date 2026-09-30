@@ -10,8 +10,9 @@ Sorties dans `public/activites/` :
 
 * `<clé>.html` — fiche projetable et imprimable ;
 * `index.html` — sommaire des 10 fiches ;
-* `pdf/<clé>.pdf` et `pdf/<clé>-corrige.pdf` — voir `pw-export-pdf.js`
-  (versions élève verrouillée / enseignant déverrouillée).
+* `pdf/<clé>.pdf` — version élève (voir `pw-export-pdf.js`) ;
+* `corriges/<clé>-corrige.pdf` — version enseignant, **hors de `public/`** :
+  servie uniquement par `/api/corriges/<clé>-corrige.pdf?code=2027`.
 
 Figures (matplotlib) construites sur les **données réelles** :
 
@@ -113,14 +114,28 @@ def _annual(city: str) -> pd.Series:
     return annual
 
 
+def _geo_path(stem: str) -> Path:
+    """Natural Earth 50 m de préférence (détail régional), repli sur 110 m."""
+    for res in ("ne_50m", "ne_110m"):
+        path = ROOT / "data" / "maps" / f"{res}_{stem}.geojson"
+        if path.is_file():
+            return path
+    raise FileNotFoundError(f"Fond de carte introuvable : {stem}")
+
+
 def _coastlines() -> list[list[tuple[float, float]]]:
-    path = ROOT / "data" / "maps" / "ne_110m_coastline.geojson"
+    path = _geo_path("coastline")
     gj = json.loads(path.read_text(encoding="utf-8"))
     lines: list[list[tuple[float, float]]] = []
     for feat in gj.get("features", []):
         geom = feat.get("geometry") or {}
+        parts = []
         if geom.get("type") == "LineString":
-            lines.append([(float(x), float(y)) for x, y in geom.get("coordinates", [])])
+            parts = [geom.get("coordinates", [])]
+        elif geom.get("type") == "MultiLineString":
+            parts = list(geom.get("coordinates") or [])
+        for part in parts:
+            lines.append([(float(c[0]), float(c[1])) for c in part])
     return lines
 
 
@@ -141,12 +156,21 @@ def land_polys() -> list[list[tuple[float, float]]]:
     """Anneaux des continents (fond de carte des situations et schémas)."""
     global _LAND
     if _LAND is None:
-        path = ROOT / "data" / "maps" / "ne_110m_land.geojson"
+        path = _geo_path("land")
         gj = json.loads(path.read_text(encoding="utf-8"))
         polys: list[list[tuple[float, float]]] = []
         for feat in gj.get("features", []):
-            for ring in feat.get("geometry", {}).get("coordinates", []):
-                polys.append([(float(x), float(y)) for x, y in ring])
+            geom = feat.get("geometry") or {}
+            kind = geom.get("type")
+            coords = geom.get("coordinates") or []
+            if kind == "Polygon":
+                rings = coords
+            elif kind == "MultiPolygon":
+                rings = [ring for poly in coords for ring in poly]
+            else:
+                continue
+            for ring in rings:
+                polys.append([(float(c[0]), float(c[1])) for c in ring])
         _LAND = polys
     return _LAND
 
@@ -155,10 +179,10 @@ _COUNTRIES: list[list[tuple[float, float]]] | None = None
 
 
 def country_rings() -> list[list[tuple[float, float]]]:
-    """Contours des pays (frontières terrestres, Natural Earth 110 m)."""
+    """Contours des pays (frontières terrestres, Natural Earth)."""
     global _COUNTRIES
     if _COUNTRIES is None:
-        path = ROOT / "data" / "maps" / "ne_110m_admin_0_countries.geojson"
+        path = _geo_path("admin_0_countries")
         gj = json.loads(path.read_text(encoding="utf-8"))
         rings: list[list[tuple[float, float]]] = []
         for feat in gj.get("features", []):
@@ -173,7 +197,7 @@ def country_rings() -> list[list[tuple[float, float]]]:
                 continue
             for poly in polygons:
                 for ring in poly:
-                    rings.append([(float(x), float(y)) for x, y in ring])
+                    rings.append([(float(c[0]), float(c[1])) for c in ring])
         _COUNTRIES = rings
     return _COUNTRIES
 
@@ -222,22 +246,37 @@ def draw_cities(
     *,
     with_coords: bool = True,
 ) -> None:
+    """Étiquette chaque ville, à gauche ou à droite selon sa position.
+
+    L'étiquette bascule du côté opposé quand la ville est proche du bord
+    droit de la carte, pour qu'aucun texte ne soit rogné hors du cadre.
+    """
+    x0, x1 = ax.get_xlim()
     y0, y1 = ax.get_ylim()
-    dy = (y1 - y0) * 0.075
+    span_y = y1 - y0
     for i, (name, x, y) in enumerate(pts):
         ax.scatter([x], [y], s=110, c=CITY_COLORS[i % len(CITY_COLORS)],
                    ec="white", lw=1.5, zorder=5)
-        ax.text(
-            x, y, "  " + name, fontsize=fontsize, fontweight="bold", color="#1f3a5f",
-            va="center", ha="left", zorder=6,
+        flip = (x - x0) / max(x1 - x0, 1e-9) > 0.60
+        dx = -11 if flip else 11
+        ha = "right" if flip else "left"
+        ax.annotate(
+            name, xy=(x, y), xytext=(dx, 0), textcoords="offset points",
+            ha=ha, va="center", fontsize=fontsize, fontweight="bold",
+            color="#1f3a5f", zorder=6,
             path_effects=[pe.withStroke(linewidth=3, foreground="white")],
         )
         if with_coords:
-            ax.text(
-                x, y - dy,
-                f"  {_fmt_deg(y, 'lat')} · {_fmt_deg(x, 'lon')}",
+            # Sous l'étiquette, ou au-dessus si la ville est proche du bas.
+            below = (y - y0) / max(span_y, 1e-9) > 0.14
+            ax.annotate(
+                f"{_fmt_deg(y, 'lat')} · {_fmt_deg(x, 'lon')}",
+                xy=(x, y),
+                xytext=(dx, -13 if below else 13),
+                textcoords="offset points",
+                ha=ha, va="top" if below else "bottom",
                 fontsize=max(fontsize - 2, 7), color="#475569",
-                va="top", ha="left", zorder=6,
+                zorder=6,
                 path_effects=[pe.withStroke(linewidth=3, foreground="white")],
             )
 
@@ -335,31 +374,33 @@ def _place_scale_bar(
 
 
 def fig_situation(cities: list[str]) -> tuple[str, str]:
-    """Carte de situation des villes, à l'échelle (proportion corrigée).
+    """Carte de situation des villes, avec un contexte géographique minimum.
 
-    Améliorations pédagogiques : proportions corrigées à la latitude moyenne,
-    frontières des pays, graduations de latitudes/longitudes, coordonnées de
-    chaque ville et échelle graphique en kilomètres.
+    La vue garde au moins ~14° × 9° (mer, frontières, pays entiers) autour des
+    villes : un zoom trop serré sur une agglomération intérieure ne montre
+    aucun repère identifiable. Proportions corrigées à la latitude moyenne,
+    graduations, coordonnées et échelle graphique en kilomètres.
     """
     pts = city_points(cities)
     if not pts:
         raise KeyError(f"Aucune ville connue parmi : {cities}")
     lons = [x for _, x, _ in pts]
     lats = [y for _, _, y in pts]
-    mid_lat = sum(lats) / len(lats)
-    coslat = max(math.cos(math.radians(mid_lat)), 0.25)
+    cx = (max(lons) + min(lons)) / 2
+    cy = (max(lats) + min(lats)) / 2
+    coslat = max(math.cos(math.radians(cy)), 0.25)
 
-    span_lon = max(max(lons) - min(lons), 4.0)
-    span_lat = max(max(lats) - min(lats), 3.0)
+    span_lon = max(max(lons) - min(lons), 14.0)
+    span_lat = max(max(lats) - min(lats), 9.0)
     span_km = math.hypot(span_lon * 111.32 * coslat, span_lat * 111.32)
-    pad_km = max(70.0, 0.14 * span_km)
+    pad_km = max(40.0, 0.07 * span_km)
     pad_lon = pad_km / (111.32 * coslat)
     pad_lat = pad_km / 111.32
 
-    x0 = min(lons) - pad_lon
-    x1 = max(lons) + pad_lon
-    y0 = max(min(lats) - pad_lat, -60.0)
-    y1 = min(max(lats) + pad_lat, 84.0)
+    x0 = cx - span_lon / 2 - pad_lon
+    x1 = cx + span_lon / 2 + pad_lon
+    y0 = max(cy - span_lat / 2 - pad_lat, -60.0)
+    y1 = min(cy + span_lat / 2 + pad_lat, 84.0)
 
     ratio = ((y1 - y0) / (x1 - x0)) / coslat
     width = 8.6
@@ -398,6 +439,8 @@ def fig_courants() -> tuple[str, str]:
     le courant froid du Labrador vers le Canada, avec les vents d'ouest.
     """
     fig, ax = plt.subplots(figsize=(9.0, 5.6))
+    ax.set_xlim(-85, 5)
+    ax.set_ylim(28, 64)
     draw_land(ax)
     draw_cities(ax, city_points(["Bordeaux", "Montréal"]), with_coords=False)
 
@@ -426,13 +469,10 @@ def fig_courants() -> tuple[str, str]:
             path_effects=[pe.withStroke(linewidth=3, foreground="white")], zorder=6)
     ax.text(-44, 34.5, "vents d'ouest", color="#475569", fontsize=9, ha="center",
             path_effects=[pe.withStroke(linewidth=3, foreground="white")], zorder=6)
-    ax.set_xlim(-85, 5)
-    ax.set_ylim(28, 64)
     ax.set_xlabel("Longitude (°E)")
     ax.set_ylabel("Latitude (°N)")
     ax.set_title("Courants de surface de l'Atlantique Nord — schéma simplifié", pad=10)
     return "png", _as_png(fig)
-
 
 def fig_rayons() -> tuple[str, str]:
     """Schéma : réception du rayonnement solaire selon la latitude.
@@ -1256,14 +1296,16 @@ def render_index(acts: list[activities.Activity]) -> str:
 <body>
 <header class="topbar no-print">
   <span class="brand">C3S² · Climat en classe</span>
-  <span style="margin-left:auto;font-size:.85rem">10 fiches autonomes + versions PDF</span>
+  <span style="margin-left:auto;font-size:.85rem">{len(acts)} fiches autonomes + versions PDF</span>
 </header>
 <main class="wrap">
   <p class="kicker">Fiches pédagogiques autonomes</p>
-  <h1>10 activités prêtes à projeter et à imprimer</h1>
+  <h1>{len(acts)} activités prêtes à projeter et à imprimer</h1>
   <p>Chaque fiche est un fichier unique (graphiques et cartes inclus) : elle fonctionne
   sans connexion une fois téléchargée. Les corrigés se déverrouillent avec le code enseignant.
-  Les versions PDF (élève et corrigé) sont dans le dossier <code>pdf/</code>.</p>
+  Les PDF élèves sont dans <code>pdf/</code> ; les PDF de corrigés sont hors du site
+  (dossier <code>corriges/</code>, ou <code>/api/corriges/&lt;fiche&gt;-corrige.pdf?code=…</code>
+  lorsque le serveur tourne).</p>
   {''.join(cards)}
   <footer>{esc(config.ERA5_ATTRIBUTION)}</footer>
 </main>

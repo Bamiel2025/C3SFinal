@@ -101,6 +101,10 @@ Données particulières (déjà versionnées, à régénérer seulement si besoi
   simplifié** des courants (Gulf Stream, Labrador) et des vents d'ouest,
   dessiné par `scripts/build_activities.py` : le CDS ne fournit pas de
   courants, la fiche et l'application le signalent explicitement.
+- `public/assets/situation/*.png` — **cartes de localisation** dessinées par
+  `scripts/build_activities.py` avec un contexte régional (côtes, frontières,
+  mers voisines) tracé depuis Natural Earth 50 m (`data/maps/ne_50m_*`,
+  repli sur 110 m si les fichiers 50 m sont absents).
 
 ## Fiches d'activités autonomes (HTML + PDF)
 
@@ -114,7 +118,10 @@ téléchargé) :
   (chaque activité propose **deux documents à interpréter**, le second
   affiché sous le graphique principal aux étapes 3-4) ;
 - `pdf/<clé>.pdf` — version imprimable élève (sans corrigé) ;
-- `pdf/<clé>-corrige.pdf` — version enseignant (corrigés inclus).
+- `corriges/<clé>-corrige.pdf` — version enseignant (corrigés inclus),
+  volontairement **hors de `public/`** : aucun hébergeur statique ne la sert.
+  Depuis le serveur : `/api/corriges/<clé>-corrige.pdf?code=2027` (403 sans
+  le bon code enseignant).
 
 Les corrigés sont embarqués **chiffrés** dans chaque fiche : ils n'apparaissent
 ni à l'écran ni dans le code source tant que le **code enseignant (2027)**
